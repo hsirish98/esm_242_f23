@@ -1,0 +1,104 @@
+---
+title: "HW 1"
+author: "ESM242"
+output: 
+  html_document:
+    code_folding: hide
+date: '2023-10-10'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(nloptr)
+library(knitr)
+```
+
+
+## Question 1: Mining Reserve {.tabset}
+
+
+Suppose you own a mine with initial reserves $R_0$=1. You wish to determine the extraction rates, qt, that will maximize the sum of the present value of net benefits (PVNB) over a 10-year horizon t=0,1,…,9.  The net benefits from extraction are given by $\pi_t=c_0q_t+c_1q_t^2$ where $c_0$=0.8 and $c_1$=-0.1.  The discount rate is 0.05 and we’ll assume (at first) that any reserves left over in period 10 have a value of zero (i.e., $\lambda_0=0$). Find the extraction rates that maximize PVNB.  You will want to constrain extraction $q_t$ to be less than $R_t$ and for remaining reserves $R_{10}$ to be nonnegative.  
+
+### A. 
+
+What is the maximum PVNB with the initial set of parameters?
+
+<span style="color: blue;">**Answer**</span>
+
+
+```{r}
+q1_eq <- function(q, t, delta, c0, c1){
+  
+      bens = ((1/(1+delta))^t)*((c0*q)+(c1*(q)^2))
+      return(-bens)
+}
+
+
+#Use these options with nloptr
+options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15,maxeval=16000)
+
+results = vector()
+sum_bens = 0
+total_ex = vector()
+R=0.99 
+
+for(i in 0:9){
+  
+ out = nloptr(x0=0,
+          eval_f=q1_eq,
+          lb=0,
+          ub = R,
+          opts = options,
+          t=i, delta=0.05, c0=0.8, c1=-0.1)
+ R = R - out$solution
+}
+
+
+ print(out$objective)
+ print(out$solution)
+
+
+
+```
+**The maximum PVNB is `r sum_bens`**
+
+### B.
+
+How does the PVNB change when you assume that reserves left over in period 10 have a per unit value of $\lambda_{10}$=1.2? How do the optimal values of $q_t$ compare to those in part a? Explain.
+
+<span style="color: blue;">**Answer**
+</span>
+
+
+
+### C.
+
+What is the PVNB when $\lambda_{10}=1.4$ How do the optimal values of $q_t$ compare to those in part a? Explain.
+
+<span style="color: blue;">**Answer**
+</span>
+
+
+
+### D.
+
+Even without using R, you could reason that the PVNB must be at least as large in parts b and c compared to part a. Explain.
+
+<span style="color: blue;">**Answer**
+</span>
+
+
+
+### E.
+
+Now set $\lambda_{10}$ back to 0 and set $c_1$=0. Resolve and explain what happens to the optimal values of $q_t$ compare to those in part a. 
+
+<span style="color: blue;">**Answer**
+</span>
+
+
+
