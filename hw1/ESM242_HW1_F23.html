@@ -464,13 +464,38 @@ extraction <span class="math inline">\(q_t\)</span> to be less than
 <h3>A.</h3>
 <p>What is the maximum PVNB with the initial set of parameters?</p>
 <p><span style="color: blue;"><strong>Answer</strong></span></p>
-<pre class="r"><code>#q1_eq &lt;- function(q, t, delta, c0, c1){
- # bens = exp(-delta*t)*(c0*q*)
-#}
+<pre class="r"><code>q1_eq &lt;- function(q, t, delta, c0, c1){
+  
+      bens = ((1/(1+delta))^t)*((c0*q)+(c1*(q)^2))
+      return(-bens)
+}
 
 
 #Use these options with nloptr
-options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-15,maxeval=16000)</code></pre>
+options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-15,maxeval=16000)
+
+results = vector()
+sum_bens = 0
+total_ex = vector()
+R=0.99 
+
+for(i in 0:9){
+  
+ out = nloptr(x0=0,
+          eval_f=q1_eq,
+          lb=0,
+          ub = R,
+          opts = options,
+          t=i, delta=0.05, c0=0.8, c1=-0.1)
+ R = R - out$solution
+}
+
+
+ print(out$objective)</code></pre>
+<pre><code>## [1] 0</code></pre>
+<pre class="r"><code> print(out$solution)</code></pre>
+<pre><code>## [1] 0</code></pre>
+<p><strong>The maximum PVNB is 0</strong></p>
 </div>
 <div id="b." class="section level3">
 <h3>B.</h3>

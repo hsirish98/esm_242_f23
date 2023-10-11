@@ -31,36 +31,43 @@ What is the maximum PVNB with the initial set of parameters?
 
 
 ```{r}
-q1_eq <- function(q, t, delta, c0, c1){
+q1_eq <- function(q, R_init, end_year, delta, c0, c1){
   
-      bens = ((1/(1+delta))^t)*((c0*q)+(c1*(q)^2))
-      return(-bens)
+    R = vector() ## make vector for reserves
+    extraction = vector() ## make vector for extraction rates (q)
+    bens = vector() ## make vector for benefits
+    
+    R[1] = R_init ## set initial reserve 
+    extraction[1] = q ##extraction is just the rate we're trying to find every period
+    bens[1] = c0*extraction[1] + c1*(extraction[1])^2 ## benefits are from the c0*q + c1*q^2
+    
+    for(i in 2:(end_year+1)){ ##for 2nd spot in vector to 10th (year 9)
+      extraction[i] = q ## extraction is just the optimized q 
+      R[i] = R[i-1] - extraction[i-1] # every year R is diminished by the amount extracted
+      bens[i] = c0*extraction[i-1] + c1*extraction[i-1]^2 ## benefits are given from the equation
+    }
+    
+    t=seq(from=0,end_year) ##set amount of periods to add for present value 
+  
+    pv=((1/(1+delta))^t)*bens ##present value discounted
+  
+    npv=sum(pv) ## sum up present values, discounted
+    
+    return(-npv)
 }
-
 
 #Use these options with nloptr
 options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15,maxeval=16000)
 
-results = vector()
-sum_bens = 0
-total_ex = vector()
-R=0.99 
 
-for(i in 0:9){
-  
- out = nloptr(x0=0,
-          eval_f=q1_eq,
-          lb=0,
-          ub = R,
-          opts = options,
-          t=i, delta=0.05, c0=0.8, c1=-0.1)
- R = R - out$solution
-}
+ out=nloptr(x0=rep(0.1,10),eval_f=q1_eq,
+              lb=rep(0,10),
+              ub=rep(1,10),
+              opts = options, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1)
 
 
- print(out$objective)
+ print(-out$objective)
  print(out$solution)
-
 
 
 ```
@@ -72,6 +79,60 @@ How does the PVNB change when you assume that reserves left over in period 10 ha
 
 <span style="color: blue;">**Answer**
 </span>
+
+```{r}
+
+q1_eq <- function(q, R_init, end_year, delta, c0, c1, lambda){
+  
+    R = vector() ## make vector for reserves
+    extraction = vector() ## make vector for extraction rates (q)
+    bens = vector() ## make vector for benefits
+    
+    R[1] = R_init ## set initial reserve 
+    extraction[1] = q ##extraction is just the rate we're trying to find every period
+    bens[1] = c0*extraction[1] + c1*(extraction[1])^2 ## benefits are from the c0*q + c1*q^2
+    
+    for(i in 2:(end_year+1)){ ##for 2nd spot in vector to 10th (year 9)
+      extraction[i] = q ## extraction is just the optimized q 
+      R[i] = R[i-1] - extraction[i-1] # every year R is diminished by the amount extracted
+      bens[i] = c0*extraction[i-1] + c1*extraction[i-1]^2 ## benefits are given from the equation
+    }
+    
+    R_end = R[end_year+1] - extraction[end_year+1]
+    
+    t=seq(from=0,end_year) 
+  
+    pv=((1/(1+delta))^t)*bens ##present value discounted
+  
+    npv=sum(pv) + (R_end*lambda)*(1/1+delta)
+    
+    return(-npv)
+}
+
+# constraint <- function(){
+#   state <- vector()
+#   const <- vector()
+#   state[1] = init_state
+#   const[1] = choice[1] - state[1] 
+#   
+# }
+
+#Use these options with nloptr
+options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15,maxeval=16000)
+
+
+ out=nloptr(x0=rep(0.1,10),eval_f=q1_eq,
+            eval_g_ineq = constraint,
+              lb=rep(0,10),
+              ub=rep(1,10),
+              opts = options, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda = 1.2)
+
+
+ print(-out$objective)
+ print(out$solution)
+ 
+```
+
 
 
 
