@@ -7,7 +7,7 @@ output:
 date: '2023-10-10'
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
@@ -33,9 +33,9 @@ What is the maximum PVNB with the initial set of parameters?
 ```{r}
 q1_eq <- function(q, R_init, end_year, delta, c0, c1){
   
-    R = vector() ## make vector for reserves
-    extraction = vector() ## make vector for extraction rates (q)
-    bens = vector() ## make vector for benefits
+    R = vector(mode="numeric",length=0) ## make vector for reserves
+    extraction = vector(mode="numeric",length=0) ## make vector for extraction rates (q)
+    bens = vector(mode="numeric",length=0) ## make vector for benefits
     
     R[1] = R_init ## set initial reserve 
     extraction[1] = q ##extraction is just the rate we're trying to find every period
@@ -44,7 +44,7 @@ q1_eq <- function(q, R_init, end_year, delta, c0, c1){
     for(i in 2:(end_year+1)){ ##for 2nd spot in vector to 10th (year 9)
       extraction[i] = q ## extraction is just the optimized q 
       R[i] = R[i-1] - extraction[i-1] # every year R is diminished by the amount extracted
-      bens[i] = c0*extraction[i-1] + c1*extraction[i-1]^2 ## benefits are given from the equation
+      bens[i] = c0*extraction[i] + c1*extraction[i]^2 ## benefits are given from the equation
     }
     
     t=seq(from=0,end_year) ##set amount of periods to add for present value 
@@ -56,13 +56,32 @@ q1_eq <- function(q, R_init, end_year, delta, c0, c1){
     return(-npv)
 }
 
+
+##make constraint function
+
+constraint_q1 <- function(q, R_init, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1){
+  extraction <- vector()
+  const <- vector()
+  R <- vector()
+  
+  R[1] = R_init
+  extraction[1] = q
+  
+  for(i in 2:(end_year+1)){
+    R[i] = R[i-1] - extraction[i-1]
+    extraction[i] = q
+    const[i] = extraction[i] - R[i]
+  }
+  return(const)
+}
+
 #Use these options with nloptr
 options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15,maxeval=16000)
 
 
- out=nloptr(x0=rep(0.1,10),eval_f=q1_eq,
-              lb=rep(0,10),
-              ub=rep(1,10),
+ out=nloptr(x0=rep(0.1,times=10),eval_f=q1_eq,
+              lb=rep(0,times=10),
+              ub=rep(1,times=10),
               opts = options, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1)
 
 
@@ -71,7 +90,9 @@ options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15,maxeval=16000)
 
 
 ```
-**The maximum PVNB is `r sum_bens`**
+
+
+
 
 ### B.
 
@@ -117,12 +138,12 @@ q1_eq <- function(q, R_init, end_year, delta, c0, c1, lambda){
 #   
 # }
 
+
 #Use these options with nloptr
 options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15,maxeval=16000)
 
 
  out=nloptr(x0=rep(0.1,10),eval_f=q1_eq,
-            eval_g_ineq = constraint,
               lb=rep(0,10),
               ub=rep(1,10),
               opts = options, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda = 1.2)

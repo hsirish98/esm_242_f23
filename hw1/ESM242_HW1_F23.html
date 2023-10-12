@@ -464,38 +464,65 @@ extraction <span class="math inline">\(q_t\)</span> to be less than
 <h3>A.</h3>
 <p>What is the maximum PVNB with the initial set of parameters?</p>
 <p><span style="color: blue;"><strong>Answer</strong></span></p>
-<pre class="r"><code>q1_eq &lt;- function(q, t, delta, c0, c1){
+<pre class="r"><code>q1_eq &lt;- function(q, R_init, end_year, delta, c0, c1){
   
-      bens = ((1/(1+delta))^t)*((c0*q)+(c1*(q)^2))
-      return(-bens)
+    R = vector(mode=&quot;numeric&quot;,length=0) ## make vector for reserves
+    extraction = vector(mode=&quot;numeric&quot;,length=0) ## make vector for extraction rates (q)
+    bens = vector(mode=&quot;numeric&quot;,length=0) ## make vector for benefits
+    
+    R[1] = R_init ## set initial reserve 
+    extraction[1] = q ##extraction is just the rate we&#39;re trying to find every period
+    bens[1] = c0*extraction[1] + c1*(extraction[1])^2 ## benefits are from the c0*q + c1*q^2
+    
+    for(i in 2:(end_year+1)){ ##for 2nd spot in vector to 10th (year 9)
+      extraction[i] = q ## extraction is just the optimized q 
+      R[i] = R[i-1] - extraction[i-1] # every year R is diminished by the amount extracted
+      bens[i] = c0*extraction[i] + c1*extraction[i]^2 ## benefits are given from the equation
+    }
+    
+    t=seq(from=0,end_year) ##set amount of periods to add for present value 
+  
+    pv=((1/(1+delta))^t)*bens ##present value discounted
+  
+    npv=sum(pv) ## sum up present values, discounted
+    
+    return(-npv)
 }
 
+
+##make constraint function
+
+constraint_q1 &lt;- function(q, R_init, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1){
+  extraction &lt;- vector()
+  const &lt;- vector()
+  R &lt;- vector()
+  
+  R[1] = R_init
+  extraction[1] = q
+  
+  for(i in 2:(end_year+1)){
+    R[i] = R[i-1] - extraction[i-1]
+    extraction[i] = q
+    const[i] = extraction[i] - R[i]
+  }
+  return(const)
+}
 
 #Use these options with nloptr
 options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-15,maxeval=16000)
 
-results = vector()
-sum_bens = 0
-total_ex = vector()
-R=0.99 
 
-for(i in 0:9){
-  
- out = nloptr(x0=0,
-          eval_f=q1_eq,
-          lb=0,
-          ub = R,
-          opts = options,
-          t=i, delta=0.05, c0=0.8, c1=-0.1)
- R = R - out$solution
-}
+ out=nloptr(x0=rep(0.1,times=10),eval_f=q1_eq,
+              lb=rep(0,times=10),
+              ub=rep(1,times=10),
+              opts = options, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1)
 
 
- print(out$objective)</code></pre>
-<pre><code>## [1] 0</code></pre>
+ print(-out$objective)</code></pre>
+<pre><code>## [1] 5.675475</code></pre>
 <pre class="r"><code> print(out$solution)</code></pre>
-<pre><code>## [1] 0</code></pre>
-<p><strong>The maximum PVNB is 0</strong></p>
+<pre><code>##  [1] 1.000000e+00 1.016075e-01 9.604488e-02 1.192507e-01 1.162685e-01
+##  [6] 1.060810e-01 2.740863e-16 1.908196e-16 2.081668e-16 5.318875e-03</code></pre>
 </div>
 <div id="b." class="section level3">
 <h3>B.</h3>
@@ -504,6 +531,57 @@ period 10 have a per unit value of <span class="math inline">\(\lambda_{10}\)</s
 values of <span class="math inline">\(q_t\)</span> compare to those in
 part a? Explain.</p>
 <p><span style="color: blue;"><strong>Answer</strong> </span></p>
+<pre class="r"><code>q1_eq &lt;- function(q, R_init, end_year, delta, c0, c1, lambda){
+  
+    R = vector() ## make vector for reserves
+    extraction = vector() ## make vector for extraction rates (q)
+    bens = vector() ## make vector for benefits
+    
+    R[1] = R_init ## set initial reserve 
+    extraction[1] = q ##extraction is just the rate we&#39;re trying to find every period
+    bens[1] = c0*extraction[1] + c1*(extraction[1])^2 ## benefits are from the c0*q + c1*q^2
+    
+    for(i in 2:(end_year+1)){ ##for 2nd spot in vector to 10th (year 9)
+      extraction[i] = q ## extraction is just the optimized q 
+      R[i] = R[i-1] - extraction[i-1] # every year R is diminished by the amount extracted
+      bens[i] = c0*extraction[i-1] + c1*extraction[i-1]^2 ## benefits are given from the equation
+    }
+    
+    R_end = R[end_year+1] - extraction[end_year+1]
+    
+    t=seq(from=0,end_year) 
+  
+    pv=((1/(1+delta))^t)*bens ##present value discounted
+  
+    npv=sum(pv) + (R_end*lambda)*(1/1+delta)
+    
+    return(-npv)
+}
+
+# constraint &lt;- function(){
+#   state &lt;- vector()
+#   const &lt;- vector()
+#   state[1] = init_state
+#   const[1] = choice[1] - state[1] 
+#   
+# }
+
+
+#Use these options with nloptr
+options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-15,maxeval=16000)
+
+
+ out=nloptr(x0=rep(0.1,10),eval_f=q1_eq,
+              lb=rep(0,10),
+              ub=rep(1,10),
+              opts = options, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda = 1.2)
+
+
+ print(-out$objective)</code></pre>
+<pre><code>## [1] 1.26</code></pre>
+<pre class="r"><code> print(out$solution)</code></pre>
+<pre><code>##  [1] 9.244464e-33 9.796633e-02 9.969397e-02 1.001897e-01 9.866815e-02
+##  [6] 9.677659e-02 9.319803e-02 1.268844e-01 9.610841e-02 9.153681e-02</code></pre>
 </div>
 <div id="c." class="section level3">
 <h3>C.</h3>
