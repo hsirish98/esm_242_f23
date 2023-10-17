@@ -31,21 +31,20 @@ What is the maximum PVNB with the initial set of parameters?
 
 
 ```{r}
-q1_eq <- function(q, R_init, end_year, delta, c0, c1){
+obj_func <- function(q, R_init, end_year, delta, c0, c1){
   
     R = vector(mode="numeric",length=0) ## make vector for reserves
     extraction = vector(mode="numeric",length=0) ## make vector for extraction rates (q)
     bens = vector(mode="numeric",length=0) ## make vector for benefits
     
     R[1] = R_init ## set initial reserve 
-    extraction[1] = q ##extraction is just the rate we're trying to find every period
-    bens[1] = c0*extraction[1] + c1*(extraction[1])^2 ## benefits are from the c0*q + c1*q^2
+    bens[1] = c0*q[1] + c1*(q[1])^2 ## benefits are from the c0*q + c1*q^2
     
     for(i in 2:(end_year+1)){ ##for 2nd spot in vector to 10th (year 9)
-      extraction[i] = q ## extraction is just the optimized q 
-      R[i] = R[i-1] - extraction[i-1] # every year R is diminished by the amount extracted
-      bens[i] = c0*extraction[i] + c1*extraction[i]^2 ## benefits are given from the equation
+      R[i] = R[i-1] - q[i-1] # every year R is diminished by the amount extracted
+      bens[i] = c0*q[i] + c1*q[i]^2 ## benefits are given from the equation
     }
+    
     
     t=seq(from=0,end_year) ##set amount of periods to add for present value 
   
@@ -59,30 +58,32 @@ q1_eq <- function(q, R_init, end_year, delta, c0, c1){
 
 ##make constraint function
 
-constraint_q1 <- function(q, R_init, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1){
-  extraction <- vector()
-  const <- vector()
-  R <- vector()
+R_constraint <- function(q, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1){
+  const <- vector(mode="numeric", length=length(q))
+  R <- vector(mode="numeric", length=length(q))
+
   
   R[1] = R_init
-  extraction[1] = q
   
   for(i in 2:(end_year+1)){
-    R[i] = R[i-1] - extraction[i-1]
-    extraction[i] = q
-    const[i] = extraction[i] - R[i]
+    R[i] = R[i-1] - q[i-1]
+    const[i] = q[i] - R[i]
   }
   return(const)
 }
+
+R_constraint(rep(0.1, times=10), R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1)
 
 #Use these options with nloptr
 options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15,maxeval=16000)
 
 
- out=nloptr(x0=rep(0.1,times=10),eval_f=q1_eq,
+ out=nloptr(x0=rep(0.1,times=10),eval_f=obj_func,
+              eval_g_ineq = R_constraint,
               lb=rep(0,times=10),
               ub=rep(1,times=10),
-              opts = options, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1)
+              opts = options, 
+              R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1)
 
 
  print(-out$objective)
@@ -103,20 +104,19 @@ How does the PVNB change when you assume that reserves left over in period 10 ha
 
 ```{r}
 
-q1_eq <- function(q, R_init, end_year, delta, c0, c1, lambda){
+
+obj_func_extra <- function(q, R_init, end_year, delta, c0, c1, lambda){
   
-    R = vector() ## make vector for reserves
-    extraction = vector() ## make vector for extraction rates (q)
-    bens = vector() ## make vector for benefits
+    R = vector(mode="numeric",length=0) ## make vector for reserves
+    extraction = vector(mode="numeric",length=0) ## make vector for extraction rates (q)
+    bens = vector(mode="numeric",length=0) ## make vector for benefits
     
     R[1] = R_init ## set initial reserve 
-    extraction[1] = q ##extraction is just the rate we're trying to find every period
-    bens[1] = c0*extraction[1] + c1*(extraction[1])^2 ## benefits are from the c0*q + c1*q^2
+    bens[1] = c0*q[1] + c1*(q[1])^2 ## benefits are from the c0*q + c1*q^2
     
     for(i in 2:(end_year+1)){ ##for 2nd spot in vector to 10th (year 9)
-      extraction[i] = q ## extraction is just the optimized q 
-      R[i] = R[i-1] - extraction[i-1] # every year R is diminished by the amount extracted
-      bens[i] = c0*extraction[i-1] + c1*extraction[i-1]^2 ## benefits are given from the equation
+      R[i] = R[i-1] - q[i-1] # every year R is diminished by the amount extracted
+      bens[i] = c0*q[i] + c1*q[i]^2 ## benefits are given from the equation
     }
     
     R_end = R[end_year+1] - extraction[end_year+1]
@@ -125,33 +125,42 @@ q1_eq <- function(q, R_init, end_year, delta, c0, c1, lambda){
   
     pv=((1/(1+delta))^t)*bens ##present value discounted
   
-    npv=sum(pv) + (R_end*lambda)*(1/1+delta)
+    npv=sum(pv) + (R_end*lambda)*((1/1+delta)^(end_year+1))
     
     return(-npv)
 }
 
-# constraint <- function(){
-#   state <- vector()
-#   const <- vector()
-#   state[1] = init_state
-#   const[1] = choice[1] - state[1] 
-#   
-# }
 
+##make constraint function
+
+R_constraint2 <- function(q, R_init, end_year, delta = 0.05, c0=0.8, c1=-0.1, lambda=1.2){
+  const <- vector(mode="numeric", length=length(q))
+  R <- vector(mode="numeric", length=length(q))
+
+  
+  R[1] = R_init
+  
+  for(i in 2:(end_year+1)){
+    R[i] = R[i-1] - q[i-1]
+    const[i] = q[i] - R[i]
+  }
+  return(const)
+}
 
 #Use these options with nloptr
 options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15,maxeval=16000)
 
 
- out=nloptr(x0=rep(0.1,10),eval_f=q1_eq,
-              lb=rep(0,10),
-              ub=rep(1,10),
-              opts = options, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda = 1.2)
+ out_b =nloptr(x0=rep(0.1,times=10),eval_f=obj_func_extra,
+              eval_g_ineq = R_constraint2,
+              lb=rep(0,times=10),
+              ub=rep(1,times=10),
+              opts = options, 
+              R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda=1.2)
 
 
- print(-out$objective)
- print(out$solution)
- 
+ print(-out_b$objective)
+ print(out_b$solution)
 ```
 
 
@@ -164,6 +173,25 @@ What is the PVNB when $\lambda_{10}=1.4$ How do the optimal values of $q_t$ comp
 <span style="color: blue;">**Answer**
 </span>
 
+```{r}
+#Use these options with nloptr
+options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15,maxeval=16000)
+
+
+ out_c =nloptr(x0=rep(0.1,times=10),eval_f=obj_func_extra,
+              eval_g_ineq = R_constraint2,
+              lb=rep(0,times=10),
+              ub=rep(1,times=10),
+              opts = options, 
+              R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda=1.4)
+
+
+ print(-out_c$objective)
+ print(out_c$solution)
+
+```
+
+
 
 
 ### D.
@@ -175,12 +203,28 @@ Even without using R, you could reason that the PVNB must be at least as large i
 
 
 
+
 ### E.
 
 Now set $\lambda_{10}$ back to 0 and set $c_1$=0. Resolve and explain what happens to the optimal values of $q_t$ compare to those in part a. 
 
 <span style="color: blue;">**Answer**
 </span>
+
+```{r}
+
+ out_e =nloptr(x0=rep(0.1,times=10),eval_f=obj_func,
+              eval_g_ineq = R_constraint,
+              lb=rep(0,times=10),
+              ub=rep(1,times=10),
+              opts = options, 
+              R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=0)
+
+ print(-out_e$objective)
+ print(out_e$solution)
+
+```
+
 
 
 
