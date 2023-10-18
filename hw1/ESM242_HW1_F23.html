@@ -464,23 +464,25 @@ extraction <span class="math inline">\(q_t\)</span> to be less than
 <h3>A.</h3>
 <p>What is the maximum PVNB with the initial set of parameters?</p>
 <p><span style="color: blue;"><strong>Answer</strong></span></p>
-<pre class="r"><code>q1_eq &lt;- function(q, R_init, end_year, delta, c0, c1){
+<pre class="r"><code>obj_func &lt;- function(q, R_init, end_year, delta, c0, c1, lambda){
   
-    R = vector(mode=&quot;numeric&quot;,length=0) ## make vector for reserves
-    extraction = vector(mode=&quot;numeric&quot;,length=0) ## make vector for extraction rates (q)
+    R = vector(mode=&quot;numeric&quot;,length=(end_year+2)) ## make vector for reserves
+    
     bens = vector(mode=&quot;numeric&quot;,length=0) ## make vector for benefits
     
     R[1] = R_init ## set initial reserve 
-    extraction[1] = q ##extraction is just the rate we&#39;re trying to find every period
-    bens[1] = c0*extraction[1] + c1*(extraction[1])^2 ## benefits are from the c0*q + c1*q^2
+    bens[1] = c0*q[1] + c1*(q[1])^2 ## benefits are from the c0*q + c1*q^2
     
     for(i in 2:(end_year+1)){ ##for 2nd spot in vector to 10th (year 9)
-      extraction[i] = q ## extraction is just the optimized q 
-      R[i] = R[i-1] - extraction[i-1] # every year R is diminished by the amount extracted
-      bens[i] = c0*extraction[i] + c1*extraction[i]^2 ## benefits are given from the equation
+      R[i] = R[i-1] - q[i-1] # every year R is diminished by the amount extracted
+      bens[i] = c0*q[i] + c1*q[i]^2 ## benefits are given from the equation
+      
     }
     
-    t=seq(from=0,end_year) ##set amount of periods to add for present value 
+    R[end_year+2] = R[end_year+1] - q[end_year+1]
+    bens[end_year+2] = R[end_year+2]*lambda
+    
+    t=seq(from=0,end_year+1) ##set amount of periods to add for present value 
   
     pv=((1/(1+delta))^t)*bens ##present value discounted
   
@@ -490,39 +492,84 @@ extraction <span class="math inline">\(q_t\)</span> to be less than
 }
 
 
+
+
 ##make constraint function
 
-constraint_q1 &lt;- function(q, R_init, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1){
-  extraction &lt;- vector()
-  const &lt;- vector()
-  R &lt;- vector()
+R_constraint &lt;- function(q, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda){
+  const &lt;- vector(mode=&quot;numeric&quot;, length=length(q))
+  R &lt;- vector(mode=&quot;numeric&quot;, length=length(q))
+
   
   R[1] = R_init
-  extraction[1] = q
   
   for(i in 2:(end_year+1)){
-    R[i] = R[i-1] - extraction[i-1]
-    extraction[i] = q
-    const[i] = extraction[i] - R[i]
+    R[i] = R[i-1] - q[i-1]
+    const[i] = q[i] - R[i]
   }
   return(const)
 }
+
+
 
 #Use these options with nloptr
 options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-15,maxeval=16000)
 
 
- out=nloptr(x0=rep(0.1,times=10),eval_f=q1_eq,
+ out=nloptr(x0=rep(0.1,times=10),eval_f=obj_func,
+              eval_g_ineq = R_constraint,
               lb=rep(0,times=10),
               ub=rep(1,times=10),
-              opts = options, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1)
+              opts = options, 
+              R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda=0)
+
+print(out$solution)</code></pre>
+<pre><code>##  [1] 5.107058e-01 3.362411e-01 1.530531e-01 8.326670e-33 9.694937e-34
+##  [6] 8.525022e-33 3.191457e-23 4.396595e-30 7.989694e-24 9.855403e-33</code></pre>
+<pre class="r"><code> tbl_1=round((out$solution),3)
 
 
- print(-out$objective)</code></pre>
-<pre><code>## [1] 5.675475</code></pre>
-<pre class="r"><code> print(out$solution)</code></pre>
-<pre><code>##  [1] 1.000000e+00 1.016075e-01 9.604488e-02 1.192507e-01 1.162685e-01
-##  [6] 1.060810e-01 2.740863e-16 1.908196e-16 2.081668e-16 5.318875e-03</code></pre>
+kable(tbl_1, col.names = &quot;Reserves Extracted&quot;)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">Reserves Extracted</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.511</td>
+</tr>
+<tr class="even">
+<td align="right">0.336</td>
+</tr>
+<tr class="odd">
+<td align="right">0.153</td>
+</tr>
+<tr class="even">
+<td align="right">0.000</td>
+</tr>
+<tr class="odd">
+<td align="right">0.000</td>
+</tr>
+<tr class="even">
+<td align="right">0.000</td>
+</tr>
+<tr class="odd">
+<td align="right">0.000</td>
+</tr>
+<tr class="even">
+<td align="right">0.000</td>
+</tr>
+<tr class="odd">
+<td align="right">0.000</td>
+</tr>
+<tr class="even">
+<td align="right">0.000</td>
+</tr>
+</tbody>
+</table>
+<p>The max PVNB is 0.74</p>
 </div>
 <div id="b." class="section level3">
 <h3>B.</h3>
@@ -531,57 +578,62 @@ period 10 have a per unit value of <span class="math inline">\(\lambda_{10}\)</s
 values of <span class="math inline">\(q_t\)</span> compare to those in
 part a? Explain.</p>
 <p><span style="color: blue;"><strong>Answer</strong> </span></p>
-<pre class="r"><code>q1_eq &lt;- function(q, R_init, end_year, delta, c0, c1, lambda){
-  
-    R = vector() ## make vector for reserves
-    extraction = vector() ## make vector for extraction rates (q)
-    bens = vector() ## make vector for benefits
-    
-    R[1] = R_init ## set initial reserve 
-    extraction[1] = q ##extraction is just the rate we&#39;re trying to find every period
-    bens[1] = c0*extraction[1] + c1*(extraction[1])^2 ## benefits are from the c0*q + c1*q^2
-    
-    for(i in 2:(end_year+1)){ ##for 2nd spot in vector to 10th (year 9)
-      extraction[i] = q ## extraction is just the optimized q 
-      R[i] = R[i-1] - extraction[i-1] # every year R is diminished by the amount extracted
-      bens[i] = c0*extraction[i-1] + c1*extraction[i-1]^2 ## benefits are given from the equation
-    }
-    
-    R_end = R[end_year+1] - extraction[end_year+1]
-    
-    t=seq(from=0,end_year) 
-  
-    pv=((1/(1+delta))^t)*bens ##present value discounted
-  
-    npv=sum(pv) + (R_end*lambda)*(1/1+delta)
-    
-    return(-npv)
-}
+<pre class="r"><code> out_1b=nloptr(x0=rep(0.1,times=10),eval_f=obj_func,
+              eval_g_ineq = R_constraint,
+              lb=rep(0,times=10),
+              ub=rep(1,times=10),
+              opts = options, 
+              R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda=1.2)
 
-# constraint &lt;- function(){
-#   state &lt;- vector()
-#   const &lt;- vector()
-#   state[1] = init_state
-#   const[1] = choice[1] - state[1] 
-#   
-# }
+print(out_1b$solution)</code></pre>
+<pre><code>##  [1] 3.165205e-01 1.323465e-01 5.012418e-16 6.437745e-23 1.251351e-21
+##  [6] 6.719896e-22 2.210560e-22 0.000000e+00 4.800900e-19 6.437668e-24</code></pre>
+<pre class="r"><code>print(-out_1b$objective)</code></pre>
+<pre><code>## [1] 0.7483826</code></pre>
+<pre class="r"><code> tbl_2=round((out_1b$solution),3)
 
 
-#Use these options with nloptr
-options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-15,maxeval=16000)
-
-
- out=nloptr(x0=rep(0.1,10),eval_f=q1_eq,
-              lb=rep(0,10),
-              ub=rep(1,10),
-              opts = options, R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda = 1.2)
-
-
- print(-out$objective)</code></pre>
-<pre><code>## [1] 1.26</code></pre>
-<pre class="r"><code> print(out$solution)</code></pre>
-<pre><code>##  [1] 9.244464e-33 9.796633e-02 9.969397e-02 1.001897e-01 9.866815e-02
-##  [6] 9.677659e-02 9.319803e-02 1.268844e-01 9.610841e-02 9.153681e-02</code></pre>
+kable(tbl_2, col.names = &quot;Reserves Extracted&quot;)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">Reserves Extracted</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.317</td>
+</tr>
+<tr class="even">
+<td align="right">0.132</td>
+</tr>
+<tr class="odd">
+<td align="right">0.000</td>
+</tr>
+<tr class="even">
+<td align="right">0.000</td>
+</tr>
+<tr class="odd">
+<td align="right">0.000</td>
+</tr>
+<tr class="even">
+<td align="right">0.000</td>
+</tr>
+<tr class="odd">
+<td align="right">0.000</td>
+</tr>
+<tr class="even">
+<td align="right">0.000</td>
+</tr>
+<tr class="odd">
+<td align="right">0.000</td>
+</tr>
+<tr class="even">
+<td align="right">0.000</td>
+</tr>
+</tbody>
+</table>
+<p>The max PVNB is 0.75</p>
 </div>
 <div id="c." class="section level3">
 <h3>C.</h3>
@@ -589,12 +641,71 @@ options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-15,ma
 values of <span class="math inline">\(q_t\)</span> compare to those in
 part a? Explain.</p>
 <p><span style="color: blue;"><strong>Answer</strong> </span></p>
+<pre class="r"><code> out_1c=nloptr(x0=rep(0.1,times=10),eval_f=obj_func,
+              eval_g_ineq = R_constraint,
+              lb=rep(0,times=10),
+              ub=rep(1,times=10),
+              opts = options, 
+              R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda=1.4)
+
+ tbl_3=round((out_1c$solution),3)
+ 
+ 
+
+kable(tbl_3, col.names = &quot;Reserves Extracted&quot;)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">Reserves Extracted</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p>The max PVNB is 0.86</p>
 </div>
 <div id="d." class="section level3">
 <h3>D.</h3>
 <p>Even without using R, you could reason that the PVNB must be at least
 as large in parts b and c compared to part a. Explain.</p>
 <p><span style="color: blue;"><strong>Answer</strong> </span></p>
+<p>If there is no benefit for receiving leftover reserves, then parts b
+and c would be the same as a. If there are benefits, optimizing the
+equation with lambda &gt;1 would mean that parts b and c would have to
+yield a PVNB equal to part a or bigger. If nloptr optimization found
+that leaving extra unextracted reserves and receiving lamdba money for
+them (discounted) did NOT increase PVNB, then I would get the same
+answer in parts b and c as in part a.</p>
 </div>
 <div id="e." class="section level3">
 <h3>E.</h3>
@@ -602,6 +713,61 @@ as large in parts b and c compared to part a. Explain.</p>
 and set <span class="math inline">\(c_1\)</span>=0. Resolve and explain
 what happens to the optimal values of <span class="math inline">\(q_t\)</span> compare to those in part a.</p>
 <p><span style="color: blue;"><strong>Answer</strong> </span></p>
+<pre class="r"><code>out_1e=nloptr(x0=rep(0.1,times=10),eval_f=obj_func,
+              eval_g_ineq = R_constraint,
+              lb=rep(0,times=10),
+              ub=rep(1,times=10),
+              opts = options, 
+              R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=0, lambda=0)
+
+ tbl_4=round((out_1e$solution),3)
+
+
+kable(tbl_4, col.names = &quot;Reserves Extracted&quot;)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">Reserves Extracted</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">1</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+</tr>
+<tr class="odd">
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p>The max PVNB is 0.8</p>
+<p>If there are no consequences to extracting, there is no subtraction
+when calculating the present value of net benefits as time goes on, then
+you would extract all the reserves on the first go. Any after that would
+be discounted</p>
 </div>
 </div>
 
