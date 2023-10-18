@@ -90,7 +90,7 @@ options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15,maxeval=16000)
               opts = options, 
               R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda=0)
 
-print(out$solution)
+
  tbl_1=round((out$solution),3)
 
 
@@ -99,7 +99,7 @@ kable(tbl_1, col.names = "Reserves Extracted")
 
 ```
 
-The max PVNB is `r round(-out$objective,2)` 
+The max PVNB is `r round(-out$objective,3)` 
 
 
 ### B.
@@ -119,8 +119,8 @@ How does the PVNB change when you assume that reserves left over in period 10 ha
               opts = options, 
               R_init = 1, end_year = 9, delta = 0.05, c0=0.8, c1=-0.1, lambda=1.2)
 
-print(out_1b$solution)
-print(-out_1b$objective)
+
+
  tbl_2=round((out_1b$solution),3)
 
 
@@ -128,7 +128,7 @@ kable(tbl_2, col.names = "Reserves Extracted")
 
 
 ```
-The max PVNB is `r round(-out_1b$objective,2)`
+The max PVNB is `r round(-out_1b$objective,3)`
 
 
 
@@ -157,7 +157,7 @@ kable(tbl_3, col.names = "Reserves Extracted")
 
 ```
 
-The max PVNB is `r round(-out_1c$objective,2)`
+The max PVNB is `r round(-out_1c$objective,3)`
 
 
 
@@ -194,7 +194,7 @@ kable(tbl_4, col.names = "Reserves Extracted")
 
 ```
 
-The max PVNB is `r round(-out_1e$objective,2)`
+The max PVNB is `r round(-out_1e$objective,3)
 
 If there are no consequences to extracting, there is no subtraction when calculating the present value of net benefits as time goes on, then you would extract all the reserves on the first go. Any after that would be discounted
 
