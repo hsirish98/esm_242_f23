@@ -38,7 +38,7 @@ obj_func <- function(q, R_init, end_year, delta, c0, c1, lambda){
     bens = vector(mode="numeric",length=0) ## make vector for benefits
     
     R[1] = R_init ## set initial reserve 
-    bens[1] = c0*q[1] + c1*(q[1])^2 ## benefits are from the c0*q + c1*q^2
+    bens[1] = c0*q[1] + c1*(q[1])^2 ## benefits are from the c0*q + c1*q^2 from the first extraction (optimized)
     
     for(i in 2:(end_year+1)){ ##for 2nd spot in vector to 10th (year 9)
       R[i] = R[i-1] - q[i-1] # every year R is diminished by the amount extracted
@@ -128,7 +128,7 @@ kable(tbl_2, col.names = "Reserves Extracted")
 
 
 ```
-The max PVNB is `r round(-out_1b$objective,3)`
+The max PVNB is `r round(-out_1b$objective,3)`, which is higher than in part A. Incentivizing leaving some reserves for the end allows the PVNB to be higher. As opposed to part A, where most of the reserves are harvested at the beginning, about half are leftover to earn the leftover reserves value. 
 
 
 
@@ -159,7 +159,7 @@ kable(tbl_3, col.names = "Reserves Extracted")
 
 The max PVNB is `r round(-out_1c$objective,3)`
 
-
+When the incentive for leftover reserves is high enough, all of the reserves will be leftover to earn that value. Here there is no extraction before the end, so all reserves are leftover for year 10. All extraction rates are 0, as opposed to in part B, where it was more beneficial to extract some while they were relatively undiscounted with the net benefits equation.
 
 ### D.
 
@@ -169,7 +169,7 @@ Even without using R, you could reason that the PVNB must be at least as large i
 </span>
 
 
-If there is no benefit for receiving leftover reserves, then parts b and c would be the same as a. If there are benefits, optimizing the equation with lambda >1 would mean that parts b and c would have to yield a PVNB equal to part a or bigger. If nloptr optimization found that leaving extra unextracted reserves and receiving lamdba money for them (discounted) did NOT increase PVNB, then I would get the same answer in parts b and c as in part a. 
+If there is no benefit (when optimizing the PVNB equation) for receiving leftover reserves, then parts b and c would be the same as a. If there are benefits, optimizing the equation with a lambda large enough >1 would mean that parts b and c would have to yield a PVNB equal to part a or bigger. In other words, if nloptr optimization found that leaving extra unextracted reserves and receiving lamdba money for them (discounted) did NOT increase PVNB, then I would get the same answer in parts b and c as in part a. 
 
 
 ### E.
@@ -196,6 +196,6 @@ kable(tbl_4, col.names = "Reserves Extracted")
 
 The max PVNB is `r round(-out_1e$objective,3)
 
-If there are no consequences to extracting, there is no subtraction when calculating the present value of net benefits as time goes on, then you would extract all the reserves on the first go. Any after that would be discounted
+If there are only net benefits to extracting with no negative weight, there is no subtraction when calculating the present value of net benefits as time goes on, then you would extract all the reserves on the first go. This is when there is no discounting and allows for the highest total sum of benefits as opposed to discounting future payments. 
 
 
