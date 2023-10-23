@@ -9,11 +9,11 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Hannah Irish" />
+<meta name="author" content="Andrew Plantinga" />
 
-<meta name="date" content="2023-10-09" />
+<meta name="date" content="2022-07-01" />
 
-<title>Week 2 (Class #3)</title>
+<title>ESM 242 HW 2</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -209,6 +209,83 @@ window.buildTabsets = function(tocID) {
 };
 
 </script>
+<script>
+window.initializeCodeFolding = function(show) {
+
+  // handlers for show-all and hide all
+  $("#rmd-show-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('show');
+    });
+  });
+  $("#rmd-hide-all-code").click(function() {
+    $('div.r-code-collapse').each(function() {
+      $(this).collapse('hide');
+    });
+  });
+
+  // index for unique code element ids
+  var currentIndex = 1;
+
+  // select all R code blocks
+  var rCodeBlocks = $('pre.r, pre.python, pre.bash, pre.sql, pre.cpp, pre.stan, pre.julia, pre.foldable');
+  rCodeBlocks.each(function() {
+    // skip if the block has fold-none class
+    if ($(this).hasClass('fold-none')) return;
+
+    // create a collapsable div to wrap the code in
+    var div = $('<div class="collapse r-code-collapse"></div>');
+    var showThis = (show || $(this).hasClass('fold-show')) && !$(this).hasClass('fold-hide');
+    var id = 'rcode-643E0F36' + currentIndex++;
+    div.attr('id', id);
+    $(this).before(div);
+    $(this).detach().appendTo(div);
+
+    // add a show code button right above
+    var showCodeText = $('<span>' + (showThis ? 'Hide' : 'Show') + '</span>');
+    var showCodeButton = $('<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm code-folding-btn pull-right float-right"></button>');
+    showCodeButton.append(showCodeText);
+    showCodeButton
+        .attr('data-toggle', 'collapse')
+        .attr('data-bs-toggle', 'collapse') // BS5
+        .attr('data-target', '#' + id)
+        .attr('data-bs-target', '#' + id)   // BS5
+        .attr('aria-expanded', showThis)
+        .attr('aria-controls', id);
+
+    var buttonRow = $('<div class="row"></div>');
+    var buttonCol = $('<div class="col-md-12"></div>');
+
+    buttonCol.append(showCodeButton);
+    buttonRow.append(buttonCol);
+
+    div.before(buttonRow);
+
+    // show the div if necessary
+    if (showThis) div.collapse('show');
+
+    // update state of button on show/hide
+    //   * Change text
+    //   * add a class for intermediate states styling
+    div.on('hide.bs.collapse', function () {
+      showCodeText.text('Show');
+      showCodeButton.addClass('btn-collapsing');
+    });
+    div.on('hidden.bs.collapse', function () {
+      showCodeButton.removeClass('btn-collapsing');
+    });
+    div.on('show.bs.collapse', function () {
+      showCodeText.text('Hide');
+      showCodeButton.addClass('btn-expanding');
+    });
+    div.on('shown.bs.collapse', function () {
+      showCodeButton.removeClass('btn-expanding');
+    });
+
+  });
+
+}
+</script>
 <style type="text/css">.hljs-literal {
 color: #990073;
 }
@@ -332,6 +409,9 @@ display: none;
 </style>
 
 <!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
 
 
 
@@ -348,43 +428,85 @@ display: none;
 
 <div id="header">
 
+<div class="btn-group pull-right float-right">
+<button type="button" class="btn btn-default btn-xs btn-secondary btn-sm dropdown-toggle" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu dropdown-menu-right" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
 
 
-<h1 class="title toc-ignore">Week 2 (Class #3)</h1>
-<h4 class="author">Hannah Irish</h4>
-<h4 class="date">2023-10-09</h4>
+
+<h1 class="title toc-ignore">ESM 242 HW 2</h1>
+<h4 class="author">Andrew Plantinga</h4>
+<h4 class="date">2022-07-01</h4>
 
 </div>
 
 
-<div class="line-block">Turn in the html document for turning in
-homework</div>
-<p>Using “R examples for ESM 242” from 10-9 module:</p>
-<p>Find the T that maximizes function</p>
-<p>Need the functional form and the parameters:</p>
-<p>p = 1</p>
-<p>a = 10</p>
-<p>b = 53.27</p>
-<p>delta = 0.05</p>
-<p>c = 300</p>
-<p>Create PVNB function</p>
-<pre class="r"><code>PVNB &lt;- function(t, a, b, p, delta, c){
-  Q = exp(a-b/t)
-  bennies = p*Q*exp(-delta*t) - c
-  return(-bennies)
-}</code></pre>
-<p>Setting up to use nloptr</p>
-<pre class="r"><code>##his Rmarkdown says &quot;always include this options statement&quot; -- will be given in homework assignment
-options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-8,maxeval=16000)</code></pre>
-<p>Using nloptr</p>
-<pre class="r"><code>ex_1a=nloptr(x0=1,##beginning stock
-          eval_f=PVNB, ##function you&#39;re maximizing
-          lb=0, ##lower bound
-          opts = options, ##options set above
-          a=10, b= 53.27, p=1, delta=0.05, c=300) ## the other parameters besides the one you&#39;re deriving across
+<div id="question-1-optimal-fishery" class="section level2 tabset">
+<h2 class="tabset">Question 1: Optimal fishery</h2>
+<p>This question examines the optimal management of a fishery. The stock
+dynamics are given by:</p>
+<p><span class="math display">\[\begin{equation}
+X_{t+1} = X_{t} + F(X_{t}) - Y_{t}
+\end{equation}\]</span></p>
+<p>where <span class="math inline">\(F(X_{t})=rX_{t}(1-X_{t}/K)\)</span>
+and <span class="math inline">\(Y_t=qX_t E_t\)</span>. Profits in each
+year are given by <span class="math inline">\(\pi_t=pY_t-cE_t^2\)</span>. Parameters values are
+given by:</p>
+<p><span class="math display">\[\begin{equation}
+\begin{aligned}
+r&amp; &amp; 0.1\\
+K&amp; &amp; 1 \\
+q&amp; &amp; 0.01 \\
+p&amp; &amp; 500 \\
+c&amp; &amp; .01 \\
+\delta&amp; &amp;0.05
+\end{aligned}
+\end{equation}\]</span></p>
+<p>Assume the fishery manager chooses effort to maximize the present
+discounted value of profits over 50 periods, t=0,1,…,49. Make sure to
+constrain the solution so that the amount of harvest <span class="math inline">\(Y_{t}\)</span> does not exceed the stock <span class="math inline">\(X_{t}\)</span> in any period.</p>
+<div id="a." class="section level3">
+<h3>A.</h3>
+<p>What is the solution when the initial stock is 0.5? Create a table
+that shows effort and stock in each period. See fishery model in
+R_examples_1.Rmd for how to create a basic table from the nloptr
+output.</p>
+<p><span style="color: blue;"><strong>Solution</strong></span></p>
+<pre class="r"><code>## Use this options list for nloptr
 
-print(ex_1a$solution)</code></pre>
-<pre><code>## [1] 32.64047</code></pre>
+local_opts&lt;-list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-15)
+options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_AUGLAG&quot;,xtol_rel=1e-15,maxeval=16000,&quot;local_opts&quot;=local_opts)</code></pre>
+</div>
+<div id="b." class="section level3">
+<h3>B.</h3>
+<p>What is the solution when the initial stock is 0.1? Create a table
+that shows effort and stock in each period.</p>
+<p><span style="color: blue;"><strong>Solution</strong></span></p>
+</div>
+<div id="c." class="section level3">
+<h3>C.</h3>
+<p>What is the solution when the initial stock is 0.9? Create a table
+that shows effort and stock in each period</p>
+<p><span style="color: blue;"><strong>Solution</strong></span></p>
+</div>
+<div id="d." class="section level3">
+<h3>D.</h3>
+<p>Compare the stock in the last period across the three solutions. What
+do you notice? Can you explain the pattern in terms of the fundamental
+equation of renewable resources?</p>
+<p><span style="color: blue;"><strong>Solution</strong></span></p>
+</div>
+<div id="e." class="section level3">
+<h3>E.</h3>
+<p>Compare the value of the objective function (i.e., the present value
+of profits) across the three solutions. Explain the differences.</p>
+<p><span style="color: blue;"><strong>Solution</strong></span></p>
+</div>
+</div>
 
 
 
@@ -419,6 +541,11 @@ $(document).ready(function () {
 </script>
 
 <!-- code folding -->
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
 
 
 <!-- dynamically load mathjax for compatibility with self-contained -->

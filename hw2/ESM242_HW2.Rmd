@@ -1,0 +1,95 @@
+---
+title: "ESM 242 HW 2"
+author: "Andrew Plantinga"
+date: '2022-07-01'
+output: 
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(nloptr)
+library(knitr)
+
+```
+
+
+
+## Question 1: Optimal fishery{.tabset}
+
+This question examines the optimal management of a fishery. The stock dynamics are given by:
+
+\begin{equation}
+X_{t+1} = X_{t} + F(X_{t}) - Y_{t}
+\end{equation}
+
+where $F(X_{t})=rX_{t}(1-X_{t}/K)$ and $Y_t=qX_t E_t$.  Profits in each year are given by $\pi_t=pY_t-cE_t^2$.  Parameters values are given by:
+
+\begin{equation}
+\begin{aligned}
+r& & 0.1\\
+K& & 1 \\
+q& & 0.01 \\
+p& & 500 \\
+c& & .01 \\
+\delta& &0.05
+\end{aligned}
+\end{equation}
+
+Assume the fishery manager chooses effort to maximize the present discounted value of profits over 50 periods, t=0,1,…,49.  Make sure to constrain the solution so that the amount of harvest $Y_{t}$ does not exceed the stock $X_{t}$ in any period.
+
+### A.
+
+What is the solution when the initial stock is 0.5?  Create a table that shows effort and stock in each period.  See fishery model in R_examples_1.Rmd for how to create a basic table from the nloptr output.
+
+<span style="color: blue;">**Solution**</span>
+
+
+
+```{r}
+
+## Use this options list for nloptr
+
+local_opts<-list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15)
+options=list("algorithm"="NLOPT_LN_AUGLAG",xtol_rel=1e-15,maxeval=16000,"local_opts"=local_opts)
+
+
+```
+
+
+
+
+### B.
+
+What is the solution when the initial stock is 0.1?  Create a table that shows effort and stock in each period.
+
+<span style="color: blue;">**Solution**</span>
+
+
+
+
+
+### C.
+
+What is the solution when the initial stock is 0.9?  Create a table that shows effort and stock in each period
+
+<span style="color: blue;">**Solution**</span>
+
+
+
+
+### D.
+
+Compare the stock in the last period across the three solutions.  What do you notice?  Can you explain the pattern in terms of the fundamental equation of renewable resources?
+
+<span style="color: blue;">**Solution**</span>
+
+
+### E.
+
+Compare the value of the objective function (i.e., the present value of profits) across the three solutions.  Explain the differences.  
+
+<span style="color: blue;">**Solution**</span>
