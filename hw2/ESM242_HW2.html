@@ -476,22 +476,748 @@ that shows effort and stock in each period. See fishery model in
 R_examples_1.Rmd for how to create a basic table from the nloptr
 output.</p>
 <p><span style="color: blue;"><strong>Solution</strong></span></p>
+<pre class="r"><code>opt_func &lt;- function(E, stock_init, r, K, q, p, c, dsct, end_year){
+  
+  stock &lt;- vector(mode = &quot;numeric&quot;, length = (end_year+1))
+  bens &lt;- vector(mode = &quot;numeric&quot;, length = (end_year+1))
+  
+  stock[1] = stock_init
+  bens[1] = p*q*stock[1]*E[1] - c*((E[1])^2)
+  
+  for(i in 2:(end_year+1))
+  {
+    X = stock[i-1]
+    stock[i] = X + r*X*(1-(X/K))-q*X*E[i-1]
+    bens[i] &lt;- p*q*stock[i]*E[i] - c*(E[i])^2
+  }
+  
+   t=seq(from=0,end_year+1)
+  
+   pv=((1/(1+dsct))^t)*bens
+   npv=sum(pv)
+   return(-npv)
+}</code></pre>
+<pre class="r"><code>constraint &lt;- function(E, stock_init, r, K, q, p, c, dsct, end_year){
+  
+    stock &lt;- vector(mode= &quot;numeric&quot;, length=end_year+1)
+    const &lt;- vector(mode= &quot;numeric&quot;, length=end_year+1)
+    
+    stock[1] = stock_init
+  
+  for(i in 2:(end_year+1)){
+    stock[i] = stock[i-1] - q*E[i-1]*(stock[i-1])
+    const[i] = q*E[i]*(stock[i]) - stock[i]
+  }
+    return(const)
+  
+}</code></pre>
 <pre class="r"><code>## Use this options list for nloptr
 
 local_opts&lt;-list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-15)
-options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_AUGLAG&quot;,xtol_rel=1e-15,maxeval=16000,&quot;local_opts&quot;=local_opts)</code></pre>
+options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_AUGLAG&quot;,xtol_rel=1e-15,maxeval=16000,&quot;local_opts&quot;=local_opts)
+
+ q1_out=nloptr(x0=rep(1,times=50),eval_f=opt_func,
+              eval_g_ineq = constraint,
+              lb=rep(0,times=50),
+              opts = options, 
+              stock_init = 0.5, r=0.1, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)
+
+ #print(-q1_out$objective)</code></pre>
+<p>PVNB maximized is $184.97</p>
+<pre class="r"><code>  stock_calc &lt;- function(E, X, r, K, q){
+    current_stock = r*X*(1-X/K) - q*X*E
+    return(current_stock)
+  }</code></pre>
+<pre class="r"><code>efforts_q1 &lt;- q1_out$solution
+ 
+ stocks_q1 &lt;- vector(mode=&quot;numeric&quot;, length=length(efforts_q1))
+ 
+ stocks_q1[1] = 0.5
+ 
+ for (i in 2:length(efforts_q1)){
+   stocks_q1[i] = stock_calc(efforts_q1[i-1], stocks_q1[i-1], r=0.1, K=1, q=0.01)
+ }
+  
+results_q1 &lt;- data.frame(&quot;Stocks&quot; = stocks_q1, &quot;Efforts&quot;= efforts_q1) 
+kable(results_q1)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">Stocks</th>
+<th align="right">Efforts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.5000000</td>
+<td align="right">4.627761</td>
+</tr>
+<tr class="even">
+<td align="right">0.0018612</td>
+<td align="right">4.434927</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0001032</td>
+<td align="right">4.615129</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000056</td>
+<td align="right">4.667499</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000003</td>
+<td align="right">4.627658</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">4.531317</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">4.404904</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">4.265031</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">4.121144</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.978269</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.838935</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.704329</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.574934</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.450877</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.425166</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.651329</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.134848</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.036977</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.447020</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.083613</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.986746</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.673047</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.086884</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.908974</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.559269</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.407947</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.873229</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.623716</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.320978</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.465557</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.237163</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.253453</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.225162</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.048056</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.271146</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">1.847673</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.713857</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.216023</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">1.813921</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.206997</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">1.721004</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">1.931593</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">1.776882</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">1.966890</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">1.660357</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">1.527844</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.436503</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.242694</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.223735</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.267281</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div id="b." class="section level3">
 <h3>B.</h3>
 <p>What is the solution when the initial stock is 0.1? Create a table
 that shows effort and stock in each period.</p>
 <p><span style="color: blue;"><strong>Solution</strong></span></p>
+<pre class="r"><code> q2_out=nloptr(x0=rep(1,times=50),eval_f=opt_func,
+              eval_g_ineq = constraint,
+              lb=rep(0,times=50),
+              opts = options, 
+              stock_init = 0.1, r=0.1, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)</code></pre>
+<p>PVNB maximized is $69.39</p>
+<pre class="r"><code>efforts_q2 &lt;- q2_out$solution
+ 
+ stocks_q2 &lt;- vector(mode=&quot;numeric&quot;, length=length(efforts_q2))
+ 
+ stocks_q2[1] = 0.5
+ 
+ for (i in 2:length(efforts_q2)){
+   stocks_q2[i] = stock_calc(efforts_q2[i-1], stocks_q2[i-1], r=0.1, K=1, q=0.01)
+ }
+  
+results_q2 &lt;- data.frame(&quot;Stocks&quot; = stocks_q2, &quot;Efforts&quot;= efforts_q2) 
+kable(results_q2)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">Stocks</th>
+<th align="right">Efforts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.5000000</td>
+<td align="right">2.197162</td>
+</tr>
+<tr class="even">
+<td align="right">0.0140142</td>
+<td align="right">2.201877</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0010732</td>
+<td align="right">2.393789</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000815</td>
+<td align="right">2.582269</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000060</td>
+<td align="right">2.761533</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000004</td>
+<td align="right">2.926255</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.072229</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.196828</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.299141</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.379772</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.440416</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.483374</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.511133</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.526067</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.530282</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.525550</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.513314</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.628214</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.701572</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.500573</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.599546</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.794693</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.534091</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.775608</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.574944</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.579029</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.368629</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.658984</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.280323</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.604890</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.094899</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.568821</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.062872</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.431831</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.196063</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.037651</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.022101</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.988826</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.967217</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.827169</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.883014</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.699821</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.444952</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.088398</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.402480</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.925209</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.929936</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.261405</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.960161</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.925453</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div id="c." class="section level3">
 <h3>C.</h3>
 <p>What is the solution when the initial stock is 0.9? Create a table
 that shows effort and stock in each period</p>
 <p><span style="color: blue;"><strong>Solution</strong></span></p>
+<pre class="r"><code> q3_out=nloptr(x0=rep(1,times=50),eval_f=opt_func,
+              eval_g_ineq = constraint,
+              lb=rep(0,times=50),
+              opts = options, 
+              stock_init = 0.1, r=0.9, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)</code></pre>
+<p>PVNB maximized is $344.56</p>
+<pre class="r"><code>efforts_q3 &lt;- q3_out$solution
+ 
+ stocks_q3 &lt;- vector(mode=&quot;numeric&quot;, length=length(efforts_q3))
+ 
+ stocks_q3[1] = 0.5
+ 
+ for (i in 2:length(efforts_q3)){
+   stocks_q3[i] = stock_calc(efforts_q3[i-1], stocks_q3[i-1], r=0.1, K=1, q=0.01)
+ }
+  
+results_q3 &lt;- data.frame(&quot;Stocks&quot; = stocks_q3, &quot;Efforts&quot;= efforts_q3) 
+kable(results_q3)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">Stocks</th>
+<th align="right">Efforts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.5000000</td>
+<td align="right">1.924995</td>
+</tr>
+<tr class="even">
+<td align="right">0.0153750</td>
+<td align="right">2.833025</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0010783</td>
+<td align="right">3.288708</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000723</td>
+<td align="right">4.930030</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000037</td>
+<td align="right">6.344460</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000001</td>
+<td align="right">6.990188</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">7.352190</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">7.010684</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">6.610651</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">6.235860</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">5.894461</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">5.583607</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">5.299433</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">5.038478</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">4.797849</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">4.575166</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">4.368461</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">4.176096</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">4.336964</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.964520</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.688750</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.538102</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.922414</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.245951</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.732846</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.271843</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.175510</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">3.315995</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.811900</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.989223</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.717174</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.772125</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.600409</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.374535</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.817597</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.173588</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.795077</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.707065</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.062691</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.744268</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.696922</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.651831</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.608887</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.567987</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.529035</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.491939</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">2.456618</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.423047</td>
+</tr>
+<tr class="odd">
+<td align="right">0.0000000</td>
+<td align="right">3.045907</td>
+</tr>
+<tr class="even">
+<td align="right">0.0000000</td>
+<td align="right">2.831590</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div id="d." class="section level3">
 <h3>D.</h3>

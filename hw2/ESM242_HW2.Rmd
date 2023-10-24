@@ -7,8 +7,8 @@ output:
     code_folding: hide
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 library(tidyverse)
 library(nloptr)
@@ -51,14 +51,91 @@ What is the solution when the initial stock is 0.5?  Create a table that shows e
 
 ```{r}
 
+opt_func <- function(E, stock_init, r, K, q, p, c, dsct, end_year){
+  
+  stock <- vector(mode = "numeric", length = (end_year+1))
+  bens <- vector(mode = "numeric", length = (end_year+1))
+  
+  stock[1] = stock_init
+  bens[1] = p*q*stock[1]*E[1] - c*((E[1])^2)
+  
+  for(i in 2:(end_year+1))
+  {
+    X = stock[i-1]
+    stock[i] = X + r*X*(1-(X/K))-q*X*E[i-1]
+    bens[i] <- p*q*stock[i]*E[i] - c*(E[i])^2
+  }
+  
+   t=seq(from=0,end_year+1)
+  
+   pv=((1/(1+dsct))^t)*bens
+   npv=sum(pv)
+   return(-npv)
+}
+```
+
+
+```{r}
+constraint <- function(E, stock_init, r, K, q, p, c, dsct, end_year){
+  
+    stock <- vector(mode= "numeric", length=end_year+1)
+    const <- vector(mode= "numeric", length=end_year+1)
+    
+    stock[1] = stock_init
+  
+  for(i in 2:(end_year+1)){
+    stock[i] = stock[i-1] - q*E[i-1]*(stock[i-1])
+    const[i] = q*E[i]*(stock[i]) - stock[i]
+  }
+    return(const)
+  
+}
+  
+  
+  
+```
+
+```{r,message=FALSE, warning=FALSE}
+
 ## Use this options list for nloptr
 
 local_opts<-list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15)
 options=list("algorithm"="NLOPT_LN_AUGLAG",xtol_rel=1e-15,maxeval=16000,"local_opts"=local_opts)
 
+ q1_out=nloptr(x0=rep(1,times=50),eval_f=opt_func,
+              eval_g_ineq = constraint,
+              lb=rep(0,times=50),
+              opts = options, 
+              stock_init = 0.5, r=0.1, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)
+
+ #print(-q1_out$objective)
+
 
 ```
+PVNB maximized is $`r round(-q1_out$objective,2)`
 
+
+```{r}
+  stock_calc <- function(E, X, r, K, q){
+    current_stock = r*X*(1-X/K) - q*X*E
+    return(current_stock)
+  }
+```
+
+```{r}
+efforts_q1 <- q1_out$solution
+ 
+ stocks_q1 <- vector(mode="numeric", length=length(efforts_q1))
+ 
+ stocks_q1[1] = 0.5
+ 
+ for (i in 2:length(efforts_q1)){
+   stocks_q1[i] = stock_calc(efforts_q1[i-1], stocks_q1[i-1], r=0.1, K=1, q=0.01)
+ }
+  
+results_q1 <- data.frame("Stocks" = stocks_q1, "Efforts"= efforts_q1) 
+kable(results_q1)
+```
 
 
 
@@ -69,6 +146,30 @@ What is the solution when the initial stock is 0.1?  Create a table that shows e
 <span style="color: blue;">**Solution**</span>
 
 
+```{r}
+ q2_out=nloptr(x0=rep(1,times=50),eval_f=opt_func,
+              eval_g_ineq = constraint,
+              lb=rep(0,times=50),
+              opts = options, 
+              stock_init = 0.1, r=0.1, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)
+```
+
+PVNB maximized is $`r round(-q2_out$objective,2)`
+
+```{r}
+efforts_q2 <- q2_out$solution
+ 
+ stocks_q2 <- vector(mode="numeric", length=length(efforts_q2))
+ 
+ stocks_q2[1] = 0.5
+ 
+ for (i in 2:length(efforts_q2)){
+   stocks_q2[i] = stock_calc(efforts_q2[i-1], stocks_q2[i-1], r=0.1, K=1, q=0.01)
+ }
+  
+results_q2 <- data.frame("Stocks" = stocks_q2, "Efforts"= efforts_q2) 
+kable(results_q2)
+```
 
 
 
@@ -77,6 +178,32 @@ What is the solution when the initial stock is 0.1?  Create a table that shows e
 What is the solution when the initial stock is 0.9?  Create a table that shows effort and stock in each period
 
 <span style="color: blue;">**Solution**</span>
+
+
+```{r}
+ q3_out=nloptr(x0=rep(1,times=50),eval_f=opt_func,
+              eval_g_ineq = constraint,
+              lb=rep(0,times=50),
+              opts = options, 
+              stock_init = 0.1, r=0.9, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)
+```
+
+PVNB maximized is $`r round(-q3_out$objective,2)`
+
+```{r}
+efforts_q3 <- q3_out$solution
+ 
+ stocks_q3 <- vector(mode="numeric", length=length(efforts_q3))
+ 
+ stocks_q3[1] = 0.5
+ 
+ for (i in 2:length(efforts_q3)){
+   stocks_q3[i] = stock_calc(efforts_q3[i-1], stocks_q3[i-1], r=0.1, K=1, q=0.01)
+ }
+  
+results_q3 <- data.frame("Stocks" = stocks_q3, "Efforts"= efforts_q3) 
+kable(results_q3)
+```
 
 
 
