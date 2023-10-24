@@ -66,7 +66,7 @@ opt_func <- function(E, stock_init, r, K, q, p, c, dsct, end_year){
     bens[i] <- p*q*stock[i]*E[i] - c*(E[i])^2
   }
   
-   t=seq(from=0,end_year+1)
+   t=seq(from=0,end_year)
   
    pv=((1/(1+dsct))^t)*bens
    npv=sum(pv)
@@ -84,7 +84,8 @@ constraint <- function(E, stock_init, r, K, q, p, c, dsct, end_year){
     stock[1] = stock_init
   
   for(i in 2:(end_year+1)){
-    stock[i] = stock[i-1] - q*E[i-1]*(stock[i-1])
+    X = stock[i-1]
+    stock[i] = X + r*X*(1-(X/K))-q*X*E[i-1]
     const[i] = q*E[i]*(stock[i]) - stock[i]
   }
     return(const)
@@ -108,16 +109,14 @@ options=list("algorithm"="NLOPT_LN_AUGLAG",xtol_rel=1e-15,maxeval=16000,"local_o
               opts = options, 
               stock_init = 0.5, r=0.1, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)
 
- #print(-q1_out$objective)
-
 
 ```
-PVNB maximized is $`r round(-q1_out$objective,2)`
+PVNB maximized is **$`r round(-q1_out$objective,2)`**
 
 
 ```{r}
   stock_calc <- function(E, X, r, K, q){
-    current_stock = r*X*(1-X/K) - q*X*E
+    current_stock = X+ r*X*(1-X/K) - q*X*E
     return(current_stock)
   }
 ```
@@ -133,7 +132,7 @@ efforts_q1 <- q1_out$solution
    stocks_q1[i] = stock_calc(efforts_q1[i-1], stocks_q1[i-1], r=0.1, K=1, q=0.01)
  }
   
-results_q1 <- data.frame("Stocks" = stocks_q1, "Efforts"= efforts_q1) 
+results_q1 <- data.frame("Stocks" = round(stocks_q1,3), "Efforts"= round(efforts_q1,2)) 
 kable(results_q1)
 ```
 
@@ -154,23 +153,22 @@ What is the solution when the initial stock is 0.1?  Create a table that shows e
               stock_init = 0.1, r=0.1, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)
 ```
 
-PVNB maximized is $`r round(-q2_out$objective,2)`
+PVNB maximized is **$`r round(-q2_out$objective,2)`**
 
 ```{r}
 efforts_q2 <- q2_out$solution
  
  stocks_q2 <- vector(mode="numeric", length=length(efforts_q2))
  
- stocks_q2[1] = 0.5
+ stocks_q2[1] = 0.1
  
  for (i in 2:length(efforts_q2)){
    stocks_q2[i] = stock_calc(efforts_q2[i-1], stocks_q2[i-1], r=0.1, K=1, q=0.01)
  }
   
-results_q2 <- data.frame("Stocks" = stocks_q2, "Efforts"= efforts_q2) 
+results_q2 <- data.frame("Stocks" = round(stocks_q2,3), "Efforts"= round(efforts_q2,2)) 
 kable(results_q2)
 ```
-
 
 
 ### C.
@@ -185,28 +183,27 @@ What is the solution when the initial stock is 0.9?  Create a table that shows e
               eval_g_ineq = constraint,
               lb=rep(0,times=50),
               opts = options, 
-              stock_init = 0.1, r=0.9, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)
+              stock_init = 0.9, r=0.1, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)
 ```
 
-PVNB maximized is $`r round(-q3_out$objective,2)`
+PVNB maximized is **$`r round(-q3_out$objective,2)`**
 
 ```{r}
 efforts_q3 <- q3_out$solution
  
  stocks_q3 <- vector(mode="numeric", length=length(efforts_q3))
  
- stocks_q3[1] = 0.5
+ stocks_q3[1] = 0.9
  
  for (i in 2:length(efforts_q3)){
    stocks_q3[i] = stock_calc(efforts_q3[i-1], stocks_q3[i-1], r=0.1, K=1, q=0.01)
  }
   
-results_q3 <- data.frame("Stocks" = stocks_q3, "Efforts"= efforts_q3) 
+results_q3 <- data.frame("Stocks" = round(stocks_q3,3), "Efforts"= round(efforts_q3,2)) 
 kable(results_q3)
+
+
 ```
-
-
-
 
 ### D.
 
@@ -214,9 +211,25 @@ Compare the stock in the last period across the three solutions.  What do you no
 
 <span style="color: blue;">**Solution**</span>
 
+With an initial stock of 0.5, the final stock is `r round(stocks_q1[50],3)`
+
+With an initial stock of 0.1, the final stock is `r round(stocks_q2[50],3)`
+
+With an initial stock of 0.9, the final stock is `r round(stocks_q3[50],3)`
+
+
 
 ### E.
 
 Compare the value of the objective function (i.e., the present value of profits) across the three solutions.  Explain the differences.  
 
 <span style="color: blue;">**Solution**</span>
+
+
+With an initial stock of 0.5, the PVNB is $`r round(-q1_out$objective,2)`
+
+With an initial stock of 0.1, the final stock is $`r round(-q2_out$objective,2)`
+
+With an initial stock of 0.9, the final stock is $`r round(-q3_out$objective,2)`
+
+It's going to be beneficial to have more stock at the beginning, because a effort goes a longer way closer to present. There can be high, relatively un-discounted values from catching with similar or smaller effort cost takeaways at the beginning

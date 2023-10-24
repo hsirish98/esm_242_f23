@@ -491,7 +491,7 @@ output.</p>
     bens[i] &lt;- p*q*stock[i]*E[i] - c*(E[i])^2
   }
   
-   t=seq(from=0,end_year+1)
+   t=seq(from=0,end_year)
   
    pv=((1/(1+dsct))^t)*bens
    npv=sum(pv)
@@ -505,7 +505,8 @@ output.</p>
     stock[1] = stock_init
   
   for(i in 2:(end_year+1)){
-    stock[i] = stock[i-1] - q*E[i-1]*(stock[i-1])
+    X = stock[i-1]
+    stock[i] = X + r*X*(1-(X/K))-q*X*E[i-1]
     const[i] = q*E[i]*(stock[i]) - stock[i]
   }
     return(const)
@@ -520,12 +521,10 @@ options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_AUGLAG&quot;,xtol_rel=1e-15,ma
               eval_g_ineq = constraint,
               lb=rep(0,times=50),
               opts = options, 
-              stock_init = 0.5, r=0.1, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)
-
- #print(-q1_out$objective)</code></pre>
-<p>PVNB maximized is $184.97</p>
+              stock_init = 0.5, r=0.1, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)</code></pre>
+<p>PVNB maximized is <strong>$177.36</strong></p>
 <pre class="r"><code>  stock_calc &lt;- function(E, X, r, K, q){
-    current_stock = r*X*(1-X/K) - q*X*E
+    current_stock = X+ r*X*(1-X/K) - q*X*E
     return(current_stock)
   }</code></pre>
 <pre class="r"><code>efforts_q1 &lt;- q1_out$solution
@@ -538,7 +537,7 @@ options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_AUGLAG&quot;,xtol_rel=1e-15,ma
    stocks_q1[i] = stock_calc(efforts_q1[i-1], stocks_q1[i-1], r=0.1, K=1, q=0.01)
  }
   
-results_q1 &lt;- data.frame(&quot;Stocks&quot; = stocks_q1, &quot;Efforts&quot;= efforts_q1) 
+results_q1 &lt;- data.frame(&quot;Stocks&quot; = round(stocks_q1,3), &quot;Efforts&quot;= round(efforts_q1,2)) 
 kable(results_q1)</code></pre>
 <table>
 <thead>
@@ -549,204 +548,204 @@ kable(results_q1)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">0.5000000</td>
-<td align="right">4.627761</td>
+<td align="right">0.500</td>
+<td align="right">4.14</td>
 </tr>
 <tr class="even">
-<td align="right">0.0018612</td>
-<td align="right">4.434927</td>
+<td align="right">0.504</td>
+<td align="right">4.43</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0001032</td>
-<td align="right">4.615129</td>
+<td align="right">0.507</td>
+<td align="right">4.54</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000056</td>
-<td align="right">4.667499</td>
+<td align="right">0.509</td>
+<td align="right">4.52</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000003</td>
-<td align="right">4.627658</td>
+<td align="right">0.511</td>
+<td align="right">4.43</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">4.531317</td>
+<td align="right">0.513</td>
+<td align="right">4.30</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">4.404904</td>
+<td align="right">0.516</td>
+<td align="right">4.15</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">4.265031</td>
+<td align="right">0.520</td>
+<td align="right">4.00</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">4.121144</td>
+<td align="right">0.524</td>
+<td align="right">3.85</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.978269</td>
+<td align="right">0.529</td>
+<td align="right">3.71</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.838935</td>
+<td align="right">0.534</td>
+<td align="right">3.58</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.704329</td>
+<td align="right">0.540</td>
+<td align="right">3.45</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.574934</td>
+<td align="right">0.546</td>
+<td align="right">3.33</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.450877</td>
+<td align="right">0.553</td>
+<td align="right">3.40</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.425166</td>
+<td align="right">0.559</td>
+<td align="right">3.34</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.651329</td>
+<td align="right">0.565</td>
+<td align="right">3.02</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.134848</td>
+<td align="right">0.572</td>
+<td align="right">2.96</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.036977</td>
+<td align="right">0.580</td>
+<td align="right">3.29</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.447020</td>
+<td align="right">0.585</td>
+<td align="right">2.79</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.083613</td>
+<td align="right">0.593</td>
+<td align="right">3.18</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.986746</td>
+<td align="right">0.598</td>
+<td align="right">2.61</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.673047</td>
+<td align="right">0.607</td>
+<td align="right">3.13</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.086884</td>
+<td align="right">0.611</td>
+<td align="right">2.44</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.908974</td>
+<td align="right">0.620</td>
+<td align="right">2.96</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.559269</td>
+<td align="right">0.625</td>
+<td align="right">2.36</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.407947</td>
+<td align="right">0.634</td>
+<td align="right">2.77</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.873229</td>
+<td align="right">0.640</td>
+<td align="right">2.23</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.623716</td>
+<td align="right">0.649</td>
+<td align="right">2.63</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.320978</td>
+<td align="right">0.654</td>
+<td align="right">2.06</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.465557</td>
+<td align="right">0.663</td>
+<td align="right">2.58</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.237163</td>
+<td align="right">0.669</td>
+<td align="right">2.25</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.253453</td>
+<td align="right">0.676</td>
+<td align="right">2.12</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.225162</td>
+<td align="right">0.683</td>
+<td align="right">2.42</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.048056</td>
+<td align="right">0.688</td>
+<td align="right">1.88</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.271146</td>
+<td align="right">0.697</td>
+<td align="right">2.47</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">1.847673</td>
+<td align="right">0.701</td>
+<td align="right">1.78</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.713857</td>
+<td align="right">0.709</td>
+<td align="right">2.29</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.216023</td>
+<td align="right">0.714</td>
+<td align="right">1.73</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">1.813921</td>
+<td align="right">0.722</td>
+<td align="right">2.19</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.206997</td>
+<td align="right">0.726</td>
+<td align="right">1.67</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">1.721004</td>
+<td align="right">0.734</td>
+<td align="right">1.97</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">1.931593</td>
+<td align="right">0.739</td>
+<td align="right">1.69</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">1.776882</td>
+<td align="right">0.746</td>
+<td align="right">1.63</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">1.966890</td>
+<td align="right">0.753</td>
+<td align="right">1.93</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">1.660357</td>
+<td align="right">0.757</td>
+<td align="right">1.82</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">1.527844</td>
+<td align="right">0.761</td>
+<td align="right">1.62</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.436503</td>
+<td align="right">0.767</td>
+<td align="right">1.42</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.242694</td>
+<td align="right">0.774</td>
+<td align="right">2.03</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.223735</td>
+<td align="right">0.776</td>
+<td align="right">2.17</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.267281</td>
+<td align="right">0.776</td>
+<td align="right">2.16</td>
 </tr>
 </tbody>
 </table>
@@ -761,18 +760,18 @@ that shows effort and stock in each period.</p>
               lb=rep(0,times=50),
               opts = options, 
               stock_init = 0.1, r=0.1, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)</code></pre>
-<p>PVNB maximized is $69.39</p>
+<p>PVNB maximized is <strong>$69.31</strong></p>
 <pre class="r"><code>efforts_q2 &lt;- q2_out$solution
  
  stocks_q2 &lt;- vector(mode=&quot;numeric&quot;, length=length(efforts_q2))
  
- stocks_q2[1] = 0.5
+ stocks_q2[1] = 0.1
  
  for (i in 2:length(efforts_q2)){
    stocks_q2[i] = stock_calc(efforts_q2[i-1], stocks_q2[i-1], r=0.1, K=1, q=0.01)
  }
   
-results_q2 &lt;- data.frame(&quot;Stocks&quot; = stocks_q2, &quot;Efforts&quot;= efforts_q2) 
+results_q2 &lt;- data.frame(&quot;Stocks&quot; = round(stocks_q2,3), &quot;Efforts&quot;= round(efforts_q2,2)) 
 kable(results_q2)</code></pre>
 <table>
 <thead>
@@ -783,204 +782,204 @@ kable(results_q2)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">0.5000000</td>
-<td align="right">2.197162</td>
+<td align="right">0.100</td>
+<td align="right">2.00</td>
 </tr>
 <tr class="even">
-<td align="right">0.0140142</td>
-<td align="right">2.201877</td>
+<td align="right">0.107</td>
+<td align="right">2.19</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0010732</td>
-<td align="right">2.393789</td>
+<td align="right">0.114</td>
+<td align="right">2.39</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000815</td>
-<td align="right">2.582269</td>
+<td align="right">0.122</td>
+<td align="right">2.58</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000060</td>
-<td align="right">2.761533</td>
+<td align="right">0.129</td>
+<td align="right">2.76</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000004</td>
-<td align="right">2.926255</td>
+<td align="right">0.137</td>
+<td align="right">2.92</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.072229</td>
+<td align="right">0.145</td>
+<td align="right">3.07</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.196828</td>
+<td align="right">0.153</td>
+<td align="right">3.20</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.299141</td>
+<td align="right">0.161</td>
+<td align="right">3.30</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.379772</td>
+<td align="right">0.169</td>
+<td align="right">3.38</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.440416</td>
+<td align="right">0.177</td>
+<td align="right">3.44</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.483374</td>
+<td align="right">0.186</td>
+<td align="right">3.49</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.511133</td>
+<td align="right">0.194</td>
+<td align="right">3.51</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.526067</td>
+<td align="right">0.203</td>
+<td align="right">3.53</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.530282</td>
+<td align="right">0.212</td>
+<td align="right">3.53</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.525550</td>
+<td align="right">0.221</td>
+<td align="right">3.53</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.513314</td>
+<td align="right">0.231</td>
+<td align="right">3.52</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.628214</td>
+<td align="right">0.240</td>
+<td align="right">3.63</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.701572</td>
+<td align="right">0.250</td>
+<td align="right">3.70</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.500573</td>
+<td align="right">0.259</td>
+<td align="right">3.50</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.599546</td>
+<td align="right">0.270</td>
+<td align="right">3.60</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.794693</td>
+<td align="right">0.280</td>
+<td align="right">3.80</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.534091</td>
+<td align="right">0.289</td>
+<td align="right">3.54</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.775608</td>
+<td align="right">0.299</td>
+<td align="right">3.78</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.574944</td>
+<td align="right">0.309</td>
+<td align="right">3.58</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.579029</td>
+<td align="right">0.319</td>
+<td align="right">3.58</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.368629</td>
+<td align="right">0.330</td>
+<td align="right">3.37</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.658984</td>
+<td align="right">0.341</td>
+<td align="right">3.66</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.280323</td>
+<td align="right">0.351</td>
+<td align="right">3.28</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.604890</td>
+<td align="right">0.362</td>
+<td align="right">3.61</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.094899</td>
+<td align="right">0.372</td>
+<td align="right">3.10</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.568821</td>
+<td align="right">0.384</td>
+<td align="right">3.57</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.062872</td>
+<td align="right">0.394</td>
+<td align="right">3.06</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.431831</td>
+<td align="right">0.406</td>
+<td align="right">3.43</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.196063</td>
+<td align="right">0.416</td>
+<td align="right">3.20</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.037651</td>
+<td align="right">0.427</td>
+<td align="right">3.04</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.022101</td>
+<td align="right">0.438</td>
+<td align="right">3.02</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.988826</td>
+<td align="right">0.450</td>
+<td align="right">2.99</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.967217</td>
+<td align="right">0.461</td>
+<td align="right">2.97</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.827169</td>
+<td align="right">0.472</td>
+<td align="right">2.83</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.883014</td>
+<td align="right">0.484</td>
+<td align="right">2.88</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.699821</td>
+<td align="right">0.495</td>
+<td align="right">2.70</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.444952</td>
+<td align="right">0.506</td>
+<td align="right">2.45</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.088398</td>
+<td align="right">0.519</td>
+<td align="right">3.09</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.402480</td>
+<td align="right">0.528</td>
+<td align="right">2.40</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.925209</td>
+<td align="right">0.540</td>
+<td align="right">2.93</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.929936</td>
+<td align="right">0.549</td>
+<td align="right">2.93</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.261405</td>
+<td align="right">0.558</td>
+<td align="right">2.26</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.960161</td>
+<td align="right">0.570</td>
+<td align="right">2.96</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.925453</td>
+<td align="right">0.577</td>
+<td align="right">2.93</td>
 </tr>
 </tbody>
 </table>
@@ -994,19 +993,19 @@ that shows effort and stock in each period</p>
               eval_g_ineq = constraint,
               lb=rep(0,times=50),
               opts = options, 
-              stock_init = 0.1, r=0.9, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)</code></pre>
-<p>PVNB maximized is $344.56</p>
+              stock_init = 0.9, r=0.1, K=1, q=0.01, p=500, c=0.01, dsct=0.05, end_year=49)</code></pre>
+<p>PVNB maximized is <strong>$253.6</strong></p>
 <pre class="r"><code>efforts_q3 &lt;- q3_out$solution
  
  stocks_q3 &lt;- vector(mode=&quot;numeric&quot;, length=length(efforts_q3))
  
- stocks_q3[1] = 0.5
+ stocks_q3[1] = 0.9
  
  for (i in 2:length(efforts_q3)){
    stocks_q3[i] = stock_calc(efforts_q3[i-1], stocks_q3[i-1], r=0.1, K=1, q=0.01)
  }
   
-results_q3 &lt;- data.frame(&quot;Stocks&quot; = stocks_q3, &quot;Efforts&quot;= efforts_q3) 
+results_q3 &lt;- data.frame(&quot;Stocks&quot; = round(stocks_q3,3), &quot;Efforts&quot;= round(efforts_q3,2)) 
 kable(results_q3)</code></pre>
 <table>
 <thead>
@@ -1017,204 +1016,204 @@ kable(results_q3)</code></pre>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">0.5000000</td>
-<td align="right">1.924995</td>
+<td align="right">0.900</td>
+<td align="right">4.24</td>
 </tr>
 <tr class="even">
-<td align="right">0.0153750</td>
-<td align="right">2.833025</td>
+<td align="right">0.871</td>
+<td align="right">4.95</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0010783</td>
-<td align="right">3.288708</td>
+<td align="right">0.839</td>
+<td align="right">5.61</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000723</td>
-<td align="right">4.930030</td>
+<td align="right">0.805</td>
+<td align="right">5.40</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000037</td>
-<td align="right">6.344460</td>
+<td align="right">0.778</td>
+<td align="right">5.12</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000001</td>
-<td align="right">6.990188</td>
+<td align="right">0.755</td>
+<td align="right">4.83</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">7.352190</td>
+<td align="right">0.737</td>
+<td align="right">4.55</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">7.010684</td>
+<td align="right">0.723</td>
+<td align="right">4.30</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">6.610651</td>
+<td align="right">0.712</td>
+<td align="right">4.06</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">6.235860</td>
+<td align="right">0.703</td>
+<td align="right">3.85</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">5.894461</td>
+<td align="right">0.697</td>
+<td align="right">3.66</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">5.583607</td>
+<td align="right">0.693</td>
+<td align="right">3.48</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">5.299433</td>
+<td align="right">0.690</td>
+<td align="right">3.32</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">5.038478</td>
+<td align="right">0.689</td>
+<td align="right">3.41</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">4.797849</td>
+<td align="right">0.686</td>
+<td align="right">3.24</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">4.575166</td>
+<td align="right">0.686</td>
+<td align="right">2.93</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">4.368461</td>
+<td align="right">0.687</td>
+<td align="right">2.84</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">4.176096</td>
+<td align="right">0.689</td>
+<td align="right">3.17</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">4.336964</td>
+<td align="right">0.689</td>
+<td align="right">2.63</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.964520</td>
+<td align="right">0.692</td>
+<td align="right">3.10</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.688750</td>
+<td align="right">0.692</td>
+<td align="right">2.44</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.538102</td>
+<td align="right">0.696</td>
+<td align="right">3.02</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.922414</td>
+<td align="right">0.696</td>
+<td align="right">2.26</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.245951</td>
+<td align="right">0.702</td>
+<td align="right">2.82</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.732846</td>
+<td align="right">0.703</td>
+<td align="right">2.18</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.271843</td>
+<td align="right">0.709</td>
+<td align="right">2.64</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.175510</td>
+<td align="right">0.711</td>
+<td align="right">2.06</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">3.315995</td>
+<td align="right">0.716</td>
+<td align="right">2.49</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.811900</td>
+<td align="right">0.719</td>
+<td align="right">1.90</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.989223</td>
+<td align="right">0.725</td>
+<td align="right">2.43</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.717174</td>
+<td align="right">0.728</td>
+<td align="right">2.11</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.772125</td>
+<td align="right">0.732</td>
+<td align="right">1.97</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.600409</td>
+<td align="right">0.737</td>
+<td align="right">2.31</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.374535</td>
+<td align="right">0.740</td>
+<td align="right">1.74</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.817597</td>
+<td align="right">0.746</td>
+<td align="right">2.36</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.173588</td>
+<td align="right">0.748</td>
+<td align="right">1.65</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.795077</td>
+<td align="right">0.754</td>
+<td align="right">2.18</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.707065</td>
+<td align="right">0.756</td>
+<td align="right">1.61</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.062691</td>
+<td align="right">0.762</td>
+<td align="right">2.08</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.744268</td>
+<td align="right">0.765</td>
+<td align="right">1.56</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.696922</td>
+<td align="right">0.771</td>
+<td align="right">1.88</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.651831</td>
+<td align="right">0.774</td>
+<td align="right">1.58</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.608887</td>
+<td align="right">0.779</td>
+<td align="right">1.53</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.567987</td>
+<td align="right">0.784</td>
+<td align="right">1.84</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.529035</td>
+<td align="right">0.787</td>
+<td align="right">1.73</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.491939</td>
+<td align="right">0.790</td>
+<td align="right">1.54</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">2.456618</td>
+<td align="right">0.794</td>
+<td align="right">2.13</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.423047</td>
+<td align="right">0.794</td>
+<td align="right">2.12</td>
 </tr>
 <tr class="odd">
-<td align="right">0.0000000</td>
-<td align="right">3.045907</td>
+<td align="right">0.793</td>
+<td align="right">2.10</td>
 </tr>
 <tr class="even">
-<td align="right">0.0000000</td>
-<td align="right">2.831590</td>
+<td align="right">0.793</td>
+<td align="right">2.61</td>
 </tr>
 </tbody>
 </table>
@@ -1225,12 +1224,18 @@ kable(results_q3)</code></pre>
 do you notice? Can you explain the pattern in terms of the fundamental
 equation of renewable resources?</p>
 <p><span style="color: blue;"><strong>Solution</strong></span></p>
+<p>With an initial stock of 0.5, the final stock is 0.776</p>
+<p>With an initial stock of 0.1, the final stock is 0.577</p>
+<p>With an initial stock of 0.9, the final stock is 0.793</p>
 </div>
 <div id="e." class="section level3">
 <h3>E.</h3>
 <p>Compare the value of the objective function (i.e., the present value
 of profits) across the three solutions. Explain the differences.</p>
 <p><span style="color: blue;"><strong>Solution</strong></span></p>
+<p>With an initial stock of 0.5, the PVNB is 177.36</p>
+<p>With an initial stock of 0.1, the final stock is 69.31</p>
+<p>With an initial stock of 0.9, the final stock is 253.6</p>
 </div>
 </div>
 
