@@ -1,6 +1,6 @@
 ---
 title: "ESM 242 HW 2"
-author: "Andrew Plantinga"
+author: "Andrew Plantinga (Hannah Irish)"
 date: '2022-07-01'
 output: 
   html_document:
@@ -218,6 +218,8 @@ With an initial stock of 0.1, the final stock is `r round(stocks_q2[50],3)`
 
 With an initial stock of 0.9, the final stock is `r round(stocks_q3[50],3)`
 
+Though each solution starts with a different initial stock, they end at around the same final stock. Part B is a little farther away than the other two, but when I increase the repetition times to avoce 50 it gets in the 0.7 range. The fundamental equation of resource economics suggests that optimal management of a natural resource balances the harvest and the growth, which are both included in the equation. As a result, the stock will often reach a steady state which balances these two dynamics to achieve maximum present net benefits, which is why the stock ends up at similar total numbers even when starting with different intial conditions (stock).
+
 
 
 ### E.
@@ -233,4 +235,4 @@ With an initial stock of 0.1, the final stock is $`r round(-q2_out$objective,2)`
 
 With an initial stock of 0.9, the final stock is $`r round(-q3_out$objective,2)`
 
-It's going to be beneficial to have more stock at the beginning, because a effort goes a longer way closer to present. There can be high, relatively un-discounted values from catching with similar or smaller effort cost takeaways at the beginning
+Previously, I mentioned that in all three scenarios, the stock converges on a steady state. However, when starting with a larger stock, the population can converge on steady state with more extraction with less effort. In other words, the benefits can be accrued with fewer costs sooner, when the values are less discounted than they are later. It is always more beneficial to begin with more stock because you can harvest larger amounts for the price when the discount is relatively low, compared to later. 
