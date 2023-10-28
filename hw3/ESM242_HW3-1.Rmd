@@ -25,6 +25,28 @@ This problem expands on the forest rotation problem presented in class.  Suppose
 
 Before you solve the problem for six rotations, find the optimal rotation when only one rotation is done.  What is the optimal value of $T_1$?
 
+
+
+```{r}
+obj_func <- function(choice, init_stock, a, b, c, p, delta, rotations){
+   bens = vector(mode="numeric",length=(rotations+1))
+   state = vector(mode="numeric", length=(rotations+1))
+   costs = vector(c, length=(rotations+1))
+   
+   state[1] = 0
+   bens[1] = -c
+   
+   for(i in 2:(rotations+1)){
+     state[i] = state[i-1] + choice[i]
+     bens[i] = ((1/(1+delta))^state[i])*p*exp(a-(b/state[i])) - c*(1/)
+     
+   }
+   
+
+   
+}
+```
+
 ```{r}
 
 
