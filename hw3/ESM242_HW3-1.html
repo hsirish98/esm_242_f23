@@ -465,31 +465,79 @@ p=1.5, and <span class="math inline">\(\delta\)</span>=0.05.</p>
 <p>Before you solve the problem for six rotations, find the optimal
 rotation when only one rotation is done. What is the optimal value of
 <span class="math inline">\(T_1\)</span>?</p>
-<pre class="r"><code>obj_func &lt;- function(choice, init_stock, a, b, c, p, delta, rotations){
+<pre class="r"><code>obj_func &lt;- function(choice, a, b, c, p, delta, rotations){
+  ##initialize benefit and state vectors to amount of rotations+1 (to include t=0)
    bens = vector(mode=&quot;numeric&quot;,length=(rotations+1))
    state = vector(mode=&quot;numeric&quot;, length=(rotations+1))
-   costs = vector(c, length=(rotations+1))
    
+   ##initial state (discounting time) is 0, benefits are the costs from planting trees
    state[1] = 0
    bens[1] = -c
-   
-   for(i in 2:(rotations+1)){
-     state[i] = state[i-1] + choice[i]
-     bens[i] = ((1/(1+delta))^state[i])*p*exp(a-(b/state[i])) - c*(1/(1+delta))^state[i]
-     
-   }
-   
 
+   ##second state is initial state (0) plus the choice that&#39;s maximized
+   state[2] = state[1] + choice
+   bens[2] = p*exp(a-(b/choice)) ##benefits are the price *Q(this time period/state[2]) with NO c subtracted
    
+   rho = (1/(1+delta))
+   pv = bens*(rho^state)
+   npv = sum(pv)
+   return(-npv)
 }</code></pre>
-<pre class="r"><code>options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-8,maxeval=16000)</code></pre>
+<pre class="r"><code>options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-8,maxeval=16000)
+
+ out_1a=nloptr(x0=1,eval_f=obj_func,
+              lb=0,
+              opts = options, 
+              a=10, b=53.27, c=250, p=1.5, delta=0.05, rotations=1)
+ 
+ obj_1a = -out_1a$objective
+
+ print(out_1a$solution)</code></pre>
+<pre><code>## [1] 33.04268</code></pre>
+<p>PVNB is maximized to $1064.419</p>
+<p>The optimal rotation length would be 33.04 years</p>
 </div>
 <div id="b." class="section level3">
 <h3>B.</h3>
 <p>Now solve the problem for six consecutive rotations. What are the six
 rotation lengths that you found?</p>
 <p><span style="color: blue;"><strong>Solution</strong> </span></p>
-<pre class="r"><code>options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-8,maxeval=16000)</code></pre>
+<pre class="r"><code>obj_func &lt;- function(choice, a, b, c, p, delta, rotations){
+   bens = vector(mode=&quot;numeric&quot;,length=(rotations+1))
+   state = vector(mode=&quot;numeric&quot;, length=(rotations+1))
+   
+   state[1] = 0
+   bens[1] = -c
+
+    ##this time, update state everything to state from period before + the new optimized rotation length
+   
+  for(i in 2:(rotations+1)){ ##until the second to last time (first item in vector is time = 0 and next is time = 1 so I&#39;m going to time = 5 or the 6th item in the vector, using rotations=6)
+   state[i] = state[i-1] + choice[i] 
+   bens[i] = p*exp(a-(b/choice[i])) - (ifelse(i==(rotations+1), 0, c))
+  }
+   # state[rotations+1] = state[rotations] + choice[rotations+1] ##last one 
+   # bens[rotations+1] = p*exp(a-(b/choice[rotations+1])) 
+   # 
+   rho = (1/(1+delta))
+   pv = bens*(rho^state)
+   npv = sum(pv)
+   return(-npv)
+}</code></pre>
+<pre class="r"><code>options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-8,maxeval=16000)
+
+
+out_1b &lt;- nloptr(x0=rep(1, times=7),eval_f=obj_func,
+              lb=rep(0,times=7),
+              opts = options, 
+              a=10, b=53.27, c=250, p=1.5, delta=0.05, rotations=6)
+ 
+ obj_1b = -out_1b$objective
+
+ print(out_1b$solution)</code></pre>
+<pre><code>## [1]  4.760175 29.562454 29.570148 29.602734 29.740985 30.334539 33.029986</code></pre>
+<p>PVNB is maximized to $1359.615</p>
+<p>The optimal rotation length would be 4.76, 29.56, 29.57, 29.6, 29.74,
+30.33, 33.03 years</p>
 </div>
 <div id="c." class="section level3">
 <h3>C.</h3>
@@ -504,10 +552,23 @@ rotation lengths that you found?</p>
 <span class="math inline">\(T_5\)</span> when the cost of replanting the
 stand increases to 500? Explain. Why doesn’t <span class="math inline">\(T_6\)</span> change with the higher replanting
 cost?</p>
-<pre class="r"><code>## Call the same nloptr from part B but with a different planting cost</code></pre>
 <p><span style="color: blue;"><strong>Solution</strong> </span></p>
 <p><span style="color: blue;"></p>
 <p></span></p>
+<pre class="r"><code>options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-8,maxeval=16000)
+
+
+
+out_1d &lt;- nloptr(x0=rep(1, times=7),eval_f=obj_func,
+              lb=rep(0,times=7),
+              opts = options, 
+              a=10, b=53.27, c=500, p=1.5, delta=0.05, rotations=6)
+ 
+ obj_1d = -out_1d$objective
+
+ print(out_1d$solution)</code></pre>
+<pre><code>## [1]  0.02398066 30.42153142 30.45342433 30.59459764 31.22798461 34.29164420
+## [7]  0.32041615</code></pre>
 </div>
 <div id="e." class="section level3">
 <h3>E.</h3>
