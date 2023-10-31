@@ -465,6 +465,23 @@ p=1.5, and <span class="math inline">\(\delta\)</span>=0.05.</p>
 <p>Before you solve the problem for six rotations, find the optimal
 rotation when only one rotation is done. What is the optimal value of
 <span class="math inline">\(T_1\)</span>?</p>
+<pre class="r"><code>obj_func &lt;- function(choice, init_stock, a, b, c, p, delta, rotations){
+   bens = vector(mode=&quot;numeric&quot;,length=(rotations+1))
+   state = vector(mode=&quot;numeric&quot;, length=(rotations+1))
+   costs = vector(c, length=(rotations+1))
+   
+   state[1] = 0
+   bens[1] = -c
+   
+   for(i in 2:(rotations+1)){
+     state[i] = state[i-1] + choice[i]
+     bens[i] = ((1/(1+delta))^state[i])*p*exp(a-(b/state[i])) - c*(1/(1+delta))^state[i]
+     
+   }
+   
+
+   
+}</code></pre>
 <pre class="r"><code>options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-8,maxeval=16000)</code></pre>
 </div>
 <div id="b." class="section level3">

@@ -28,22 +28,22 @@ Before you solve the problem for six rotations, find the optimal rotation when o
 
 
 ```{r}
-obj_func <- function(choice, init_stock, a, b, c, p, delta, rotations){
+obj_func <- function(choice, a, b, c, p, delta, rotations){
    bens = vector(mode="numeric",length=(rotations+1))
    state = vector(mode="numeric", length=(rotations+1))
-   costs = vector(c, length=(rotations+1))
    
    state[1] = 0
    bens[1] = -c
-   
+ 
+
    for(i in 2:(rotations+1)){
      state[i] = state[i-1] + choice[i]
-     bens[i] = ((1/(1+delta))^state[i])*p*exp(a-(b/state[i])) - c*(1/)
-     
+     bens[i] = p*exp(a-(b/choice[i])) + ifelse(i != rotations+1, -c, 0)
    }
    
-
-   
+   pv = bens*(1/(1+delta))^state
+   npv = sum(pv)
+   return(-npv)
 }
 ```
 
@@ -51,6 +51,11 @@ obj_func <- function(choice, init_stock, a, b, c, p, delta, rotations){
 
 
 options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-8,maxeval=16000)
+
+ out=nloptr(x0=1,eval_f=obj_func,
+              lb=0,
+              opts = options, 
+              a=10, b=53.27, c=250, p=105, delta=0.05, rotations=1)
 
 
 ```
