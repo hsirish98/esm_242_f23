@@ -11,9 +11,9 @@
 
 <meta name="author" content="Andrew Plantinga" />
 
-<meta name="date" content="2023-10-24" />
+<meta name="date" content="2023-10-31" />
 
-<title>HW_3</title>
+<title>HW 4</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -438,9 +438,9 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">HW_3</h1>
+<h1 class="title toc-ignore">HW 4</h1>
 <h4 class="author">Andrew Plantinga</h4>
-<h4 class="date">2023-10-24</h4>
+<h4 class="date">2023-10-31</h4>
 
 </div>
 
@@ -448,282 +448,1340 @@ display: none;
 <pre class="r"><code>library(tidyverse)
 library(nloptr)
 library(knitr)</code></pre>
-<div id="question-1-forestry-rotation" class="section level2 tabset">
-<h2 class="tabset">Question 1: Forestry Rotation</h2>
-<p>This problem expands on the forest rotation problem presented in
-class. Suppose that a stand of trees is planted in time 0 at a cost of
-c, grown for <span class="math inline">\(T_1\)</span> years, harvested,
-replanted at cost c, grown for <span class="math inline">\(T_2\)</span>
-years, harvested, replanted, and so on. If we complete six rotations,
-what should be the values of <span class="math inline">\(T_1\)</span>,
-<span class="math inline">\(T_2\)</span>, <span class="math inline">\(T_3\)</span>, <span class="math inline">\(T_4\)</span>, <span class="math inline">\(T_5\)</span>, and <span class="math inline">\(T_6\)</span>? Assume that different values can be
-chosen for each year and that the stand does not need to be replanted
-after the sixth harvest. Use the parameter values a=10, b=53.27, c=250,
-p=1.5, and <span class="math inline">\(\delta\)</span>=0.05.</p>
+<div id="exhaustible-resource-extraction" class="section level2 tabset">
+<h2 class="tabset">Exhaustible Resource Extraction</h2>
+<p>Suppose there is an exhaustible resource that is costlessly
+extracted. The inverse demand curve for the resource is <span class="math inline">\(p_t=a-bq_t\)</span> where <span class="math inline">\(q_t\)</span> is the quantity extracted in time t
+and a=40, b=1. The discount rate is <span class="math inline">\(\delta=0.05\)</span> and the initial stock of
+reserves is <span class="math inline">\(R_0\)</span> = 778.1259 units.
+Set up a program to find the competitive market equilibrium and show the
+equilibrium values of <span class="math inline">\(p_t\)</span>, <span class="math inline">\(q_t\)</span>, <span class="math inline">\(R_t\)</span>, and <span class="math inline">\(\pi_t\)</span> in a table. <span class="math inline">\(R_t\)</span> is the reserves remaining in year t
+and <span class="math inline">\(\pi_t\)</span> is the discounted profits
+in each year (without costs, they are just equal to <span class="math inline">\(\rho^tp_tq_t\)</span> ). [Hint: it is easiest to
+start with the price in the last period and work backwards through
+time.]</p>
 <div id="a." class="section level3">
 <h3>A.</h3>
-<p>Before you solve the problem for six rotations, find the optimal
-rotation when only one rotation is done. What is the optimal value of
-<span class="math inline">\(T_1\)</span>?</p>
-<pre class="r"><code>obj_func &lt;- function(choice, a, b, c, p, delta, rotations){
-  ##initialize benefit and state vectors to amount of rotations+1 (to include t=0)
-    
-   npv = exp(a-b/choice[1])*p*exp(-delta*choice[1]) - c
-   return(-npv)
-}</code></pre>
-<pre class="r"><code>options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-8,maxeval=16000)
-
- out_1a=nloptr(x0=30,eval_f=obj_func,
-              lb=0,
-              opts = options, 
-              a=10, b=53.27, c=250, p=1.5, delta=0.05, rotations=1)
- 
- obj_1a = -out_1a$objective</code></pre>
-<p>PVNB is maximized to $1013.219</p>
-<p>The optimal rotation length would be 32.64 years</p>
-</div>
-<div id="b." class="section level3">
-<h3>B.</h3>
-<p>Now solve the problem for six consecutive rotations. What are the six
-rotation lengths that you found?</p>
-<p><span style="color: blue;"><strong>Solution</strong> </span></p>
-<pre class="r"><code>obj_func &lt;- function(choice, a, b, c, p, delta, rotations){
+<p>List the values of <span class="math inline">\(t\)</span>, <span class="math inline">\(p_t\)</span>, <span class="math inline">\(q_t\)</span>, <span class="math inline">\(R_t\)</span>, and <span class="math inline">\(\pi_t\)</span> in a table below. What should be
+the final (year T) values of <span class="math inline">\(p_T\)</span>
+and <span class="math inline">\(R_T\)</span>? Why? Does the resource get
+more scarce over time? What is your evidence?</p>
+<p><span style="color: blue;"><strong>Solution</strong></span></p>
+<p>Creating exhaust function:</p>
+<pre class="r"><code>exhaust_fun &lt;- function(T, a=40, b=1, delta=0.05){
+  t=seq(0,T)
+  p &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
+  q &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
+  R &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
+  profits &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
   
-   bens = vector(mode=&quot;numeric&quot;,length=(rotations+1))
-   state = vector(mode=&quot;numeric&quot;, length=(rotations+1))
-
-   state[1] = choice[1]
-   bens[1] = p*exp(a-(b/choice[1]))*exp(-delta*state[1]) - c
-   
-
-    ##this time, update state everything to state from period before + the new optimized rotation length
-   
-  for(i in 2:(rotations)){ 
-   state[i] = state[i-1] + choice[i] 
-   bens[i] = p*exp(a-(b/choice[i]))*exp(-delta*state[i])- c*exp(-delta*state[i-1])
+  p[T+1] = a 
+  R[T+1] = 0
+  profits[T] = 0
+  
+  
+  for(i in (T):1){
+    p[i] = p[i+1]/(delta+1)
+    q[i] = (a-p[i])/b
+    R[i] = R[i+1]+q[i]
+    profits[i] = p[i]*q[i]
   }
 
-   npv = sum(bens)
-   return(-npv)
+    profits = profits*(1/(1+delta))^t
+  
+return(data.frame(p, q, R, profits))
 }</code></pre>
-<pre class="r"><code>options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-8,maxeval=16000)
+<p>Test values until the right answer:</p>
+<pre class="r"><code>value = 36
 
+out_1a &lt;- exhaust_fun(value)
 
-out_1b &lt;- nloptr(x0=rep(30, times=6),eval_f=obj_func,
-              lb=rep(0,times=6),
-              opts = options, 
-              a=10, b=53.27, c=250, p=1.5, delta=0.05, rotations=6)
- 
- obj_1b = -out_1b$objective</code></pre>
-<p>PVNB is maximized to $1286.552</p>
-<p>The optimal rotation length would be 29.32, 29.32, 29.35, 29.48,
-30.04, 32.64 years</p>
-</div>
-<div id="c." class="section level3">
-<h3>C.</h3>
-<p>Explain why <span class="math inline">\(T_1\)</span> through <span class="math inline">\(T_5\)</span> are shorter than <span class="math inline">\(T_6\)</span>?</p>
-<p><span style="color: blue;"><strong>Solution</strong> </span></p>
-<p><span style="color: blue;"></p>
-<p></span></p>
-<p>T6 is the only period that doesn’t have to balance the benefits of
-harvesting with the costs of planting the trees. So there is a benefit
-to letting the trees age more before harvesting to increase the timber
-volume and maximize Q(t)</p>
-</div>
-<div id="d." class="section level3">
-<h3>D.</h3>
-<p>What happens to <span class="math inline">\(T_1\)</span> through
-<span class="math inline">\(T_5\)</span> when the cost of replanting the
-stand increases to 500? Explain. Why doesn’t <span class="math inline">\(T_6\)</span> change with the higher replanting
-cost?</p>
-<p><span style="color: blue;"><strong>Solution</strong> </span></p>
-<p><span style="color: blue;"></p>
-<p></span></p>
-<pre class="r"><code>options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-8,maxeval=16000)
+#print(out_1a$R[1])
 
+out_1a &lt;- round(out_1a,2)
+out_1a$p &lt;- paste(&quot;$&quot;,out_1a$p)
+out_1a$profits &lt;- paste(&quot;$&quot;,out_1a$profits)
 
-out_1d &lt;-nloptr(x0=rep(30, times=6),eval_f=obj_func,
-              lb=rep(0,times=6),
-              opts = options, 
-              a=10, b=53.27, c=500, p=1.5, delta=0.05, rotations=6)
- 
- obj_1d = -out_1d$objective
-
- print(out_1d$solution)</code></pre>
-<pre><code>## [1] 30.17082 30.17517 30.19484 30.28400 30.69144 32.63243</code></pre>
-<p>Since the cost of planting is higher, in T 1-5, we must allow the
-timber volume to grow more to offset the cost of planting. In other
-words, Qt needs to be higher to offset the cost of replanting. However,
-in time 6, there is no planting cost to offset, so it’s still the
-optimal cost that we got with one rotation or with the final rotation in
-the previous iteration of the problem with the planting cost of 250.</p>
-</div>
-<div id="e." class="section level3">
-<h3>E.</h3>
-<p>Compare your answer to part a (the single rotation) to <span class="math inline">\(T_6\)</span>. Why are they the same?</p>
-<p><span style="color: blue;"><strong>Solution</strong> </span></p>
-<p><span style="color: blue;"></p>
-<p></span></p>
-<p>As with part C, the final time period is the only one where there
-does not need to be a balance between the cost of replanting and the
-benefit of harvesting the plants, so the rotation length is longer to
-allow for more volume of timber to be harvested.</p>
-</div>
-<div id="f" class="section level3">
-<h3>F</h3>
-<p>Now solve for the optimal rotation when an infinite number of
-rotations are done. Compute the present value of net revenues (i.e.,
-$objective). Compare this to the present value of net revenues when only
-six rotations are done. Are they close in magnitude? Why?</p>
-<pre class="r"><code>obj_func_inf &lt;- function(choice, a, b, c, p, delta){
-  ##initialize benefit and state vectors to amount of rotations+1 (to include t=0)
-    
-   npv = (p*exp(a-(b/choice))*exp(-delta*choice) - c)/(1-exp(-delta*choice))
-   return(-npv)
-}</code></pre>
-<pre class="r"><code>options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-8,maxeval=16000)
-
- out_1f=nloptr(x0=30,eval_f=obj_func_inf,
-              lb=0,
-              opts = options, 
-              a=10, b=53.27, c=250, p=1.5, delta=0.05)
- 
-
-obj_1f = -out_1f$objective</code></pre>
-<p>The PVNB in this case is $1286.727 , which is very similar in
-magnitude to 6 rotations. If I rerun the finite rotation length values
-and increase the rotations, I see that there is very little difference
-in the net benefits from an additional rotation. This leads me to
-believe that in every additional period, the net difference between the
-planting cost and the added benefits of harvesting (with discounting
-factored in), is quite small, so adding a bunch more rotations doesn’t
-make much of a difference, even to infinity.</p>
-</div>
-</div>
-<div id="question-2-varying-initial-age" class="section level2 tabset">
-<h2 class="tabset">Question 2: Varying Initial Age</h2>
-<p>In this problem, you are asked to find the optimal rotation when the
-initial age of the stand is not zero. The key question is whether a
-positive initial age should change the solution. That is, if T* is the
-optimal rotation age for a stand starting at age 0, will it still be the
-same optimal rotation age for a stand starting at age <span class="math inline">\(A\)</span>&gt;0? The volume of timber evolves
-according to <span class="math inline">\(Q(T)=e^{a-b/T}\)</span> where
-a=13, b=185, and T is the age of the trees. The price of timber is
-p=1.78 and the cost of planting the stand at the start of each rotation
-is 1000. The discount rate is <span class="math inline">\(\delta\)</span>=0.05.</p>
-<div id="a.-1" class="section level3">
-<h3>A.</h3>
-<p>If the stand is grown for an infinite number of rotations, what is
-the optimal rotation length when the initial age of the stand is zero?
-Call this value <span class="math inline">\(T^*\)</span>. What is the
-present discounted value of net timber revenues from an infinite number
-of rotations? Call this value <span class="math inline">\(\pi_\infty\)</span>.</p>
-<p><span style="color: blue;"><strong>Solution</strong></span></p>
-<pre class="r"><code>#Use this options list
-options=list(&quot;algorithm&quot;=&quot;NLOPT_LN_COBYLA&quot;,xtol_rel=1e-15,maxeval=16000)
-
- out_2a=nloptr(x0=30,eval_f=obj_func_inf,
-              lb=0,
-              opts = options, 
-              a=13, b=185, c=1000, p=1.78, delta=0.05)
-
-obj_2a = -out_2a$objective</code></pre>
-<p>The optimal rotation length when the initial age is 0 is 60.14 years.
-The present discounted value of net timber revenues is $837.6664</p>
-</div>
-<div id="b.-1" class="section level3">
-<h3>B.</h3>
-<p>Suppose that the initial age of the stand is A and <span class="math inline">\(T_1\)</span> is the additional number of years the
-stand is grown until harvest. Then, <span class="math inline">\(A+T_1\)</span> is the age of the stand at the end
-of the first rotation. Assuming the first rotation is followed by an
-infinite number of rotations, write an expression for present discounted
-value of net timber revenues from an infinite number of rotations
-(including the first one).</p>
-<p><span style="color: blue;"><strong>Solution</strong></span></p>
-<p>The following code would be how I do this expression:</p>
-<pre class="r"><code>obj_func_withage &lt;- function(choice, A, a, b, c, p, delta){
-  ##initialize benefit and state vectors to amount of rotations+1 (to include t=0)
-    
-   npv = p*exp(a-(b/(A+choice)))*exp(-delta*choice) -c + obj_2a*exp(-delta*choice) -c
-   return(-npv)
-}</code></pre>
-</div>
-<div id="c.-1" class="section level3">
-<h3>C.</h3>
-<p>Using your formula in b, and assuming A=30, what is the optimal value
-of <span class="math inline">\(T_1\)</span>? How does your answer change
-when A=40? A=60.14? A=90? Make a table showing your results.</p>
-<p><span style="color: blue;"><strong>Solution</strong></span></p>
-<pre class="r"><code>out_2c30 =nloptr(x0=30,eval_f=obj_func_withage,
-              lb=0,
-              opts = options, 
-              a=13, A=30, b=185, c=1000, p=1.78, delta=0.05)
-
-out_2c40 =nloptr(x0=30,eval_f=obj_func_withage,
-              lb=0,
-              opts = options, 
-              a=13, A=40, b=185, c=1000, p=1.78, delta=0.05)
-
-out_2c60 =nloptr(x0=30,eval_f=obj_func_withage,
-              lb=0,
-              opts = options, 
-              a=13, A=60.14, b=185, c=1000, p=1.78, delta=0.05)
-
-out_2c90 =nloptr(x0=30,eval_f=obj_func_withage,
-              lb=0,
-              opts = options, 
-              a=13, A=90, b=185, c=1000, p=1.78, delta=0.05)
-
-Age = c(30, 40, 60.14, 90)
-
-Rotation_Length = round(c(out_2c30$solution, out_2c40$solution, out_2c60$solution, out_2c90$solution ),2)
-
-NBs = (-1)*round(c(out_2c30$objective, out_2c40$objective, out_2c60$objective, out_2c90$objective ),2)</code></pre>
-<p>Here are the optimal values of T vs the age of the tree:</p>
-<pre class="r"><code>results_2c = data.frame(Age, Rotation_Length, NBs)
-kable(results_2c)</code></pre>
+out_1a$Time &lt;- seq(0,value)</code></pre>
+<p>The final year should be 36 and the following are the values for pt,
+qt, Rt and Pit:</p>
+<pre class="r"><code>kable(out_1a, col.names = c(&quot;Price&quot;, &quot;Quantity&quot;, &quot;Reserves&quot;, &quot;Profits&quot;, &quot;Time&quot;), align=&quot;c&quot;)</code></pre>
 <table>
 <thead>
 <tr class="header">
-<th align="right">Age</th>
-<th align="right">Rotation_Length</th>
-<th align="right">NBs</th>
+<th align="center">Price</th>
+<th align="center">Quantity</th>
+<th align="center">Reserves</th>
+<th align="center">Profits</th>
+<th align="center">Time</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td align="right">30.00</td>
-<td align="right">30.14</td>
-<td align="right">6235.85</td>
+<td align="center">$ 6.91</td>
+<td align="center">33.09</td>
+<td align="center">778.13</td>
+<td align="center">$ 228.55</td>
+<td align="center">0</td>
 </tr>
 <tr class="even">
-<td align="right">40.00</td>
-<td align="right">20.14</td>
-<td align="right">11578.62</td>
+<td align="center">$ 7.25</td>
+<td align="center">32.75</td>
+<td align="center">745.03</td>
+<td align="center">$ 226.17</td>
+<td align="center">1</td>
 </tr>
 <tr class="odd">
-<td align="right">60.14</td>
-<td align="right">0.00</td>
-<td align="right">35169.80</td>
+<td align="center">$ 7.61</td>
+<td align="center">32.39</td>
+<td align="center">712.28</td>
+<td align="center">$ 223.67</td>
+<td align="center">2</td>
 </tr>
 <tr class="even">
-<td align="right">90.00</td>
-<td align="right">0.00</td>
-<td align="right">99654.22</td>
+<td align="center">$ 7.99</td>
+<td align="center">32.01</td>
+<td align="center">679.90</td>
+<td align="center">$ 221.04</td>
+<td align="center">3</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 8.39</td>
+<td align="center">31.61</td>
+<td align="center">647.89</td>
+<td align="center">$ 218.28</td>
+<td align="center">4</td>
+</tr>
+<tr class="even">
+<td align="center">$ 8.81</td>
+<td align="center">31.19</td>
+<td align="center">616.29</td>
+<td align="center">$ 215.38</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 9.26</td>
+<td align="center">30.74</td>
+<td align="center">585.10</td>
+<td align="center">$ 212.33</td>
+<td align="center">6</td>
+</tr>
+<tr class="even">
+<td align="center">$ 9.72</td>
+<td align="center">30.28</td>
+<td align="center">554.36</td>
+<td align="center">$ 209.14</td>
+<td align="center">7</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 10.2</td>
+<td align="center">29.80</td>
+<td align="center">524.07</td>
+<td align="center">$ 205.78</td>
+<td align="center">8</td>
+</tr>
+<tr class="even">
+<td align="center">$ 10.71</td>
+<td align="center">29.29</td>
+<td align="center">494.28</td>
+<td align="center">$ 202.26</td>
+<td align="center">9</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 11.25</td>
+<td align="center">28.75</td>
+<td align="center">464.99</td>
+<td align="center">$ 198.56</td>
+<td align="center">10</td>
+</tr>
+<tr class="even">
+<td align="center">$ 11.81</td>
+<td align="center">28.19</td>
+<td align="center">436.24</td>
+<td align="center">$ 194.67</td>
+<td align="center">11</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 12.4</td>
+<td align="center">27.60</td>
+<td align="center">408.05</td>
+<td align="center">$ 190.6</td>
+<td align="center">12</td>
+</tr>
+<tr class="even">
+<td align="center">$ 13.02</td>
+<td align="center">26.98</td>
+<td align="center">380.46</td>
+<td align="center">$ 186.31</td>
+<td align="center">13</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 13.67</td>
+<td align="center">26.33</td>
+<td align="center">353.48</td>
+<td align="center">$ 181.82</td>
+<td align="center">14</td>
+</tr>
+<tr class="even">
+<td align="center">$ 14.36</td>
+<td align="center">25.64</td>
+<td align="center">327.15</td>
+<td align="center">$ 177.09</td>
+<td align="center">15</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 15.08</td>
+<td align="center">24.92</td>
+<td align="center">301.51</td>
+<td align="center">$ 172.14</td>
+<td align="center">16</td>
+</tr>
+<tr class="even">
+<td align="center">$ 15.83</td>
+<td align="center">24.17</td>
+<td align="center">276.59</td>
+<td align="center">$ 166.93</td>
+<td align="center">17</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 16.62</td>
+<td align="center">23.38</td>
+<td align="center">252.42</td>
+<td align="center">$ 161.46</td>
+<td align="center">18</td>
+</tr>
+<tr class="even">
+<td align="center">$ 17.45</td>
+<td align="center">22.55</td>
+<td align="center">229.04</td>
+<td align="center">$ 155.72</td>
+<td align="center">19</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 18.32</td>
+<td align="center">21.68</td>
+<td align="center">206.49</td>
+<td align="center">$ 149.7</td>
+<td align="center">20</td>
+</tr>
+<tr class="even">
+<td align="center">$ 19.24</td>
+<td align="center">20.76</td>
+<td align="center">184.81</td>
+<td align="center">$ 143.37</td>
+<td align="center">21</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 20.2</td>
+<td align="center">19.80</td>
+<td align="center">164.05</td>
+<td align="center">$ 136.73</td>
+<td align="center">22</td>
+</tr>
+<tr class="even">
+<td align="center">$ 21.21</td>
+<td align="center">18.79</td>
+<td align="center">144.26</td>
+<td align="center">$ 129.75</td>
+<td align="center">23</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 22.27</td>
+<td align="center">17.73</td>
+<td align="center">125.47</td>
+<td align="center">$ 122.42</td>
+<td align="center">24</td>
+</tr>
+<tr class="even">
+<td align="center">$ 23.39</td>
+<td align="center">16.61</td>
+<td align="center">107.74</td>
+<td align="center">$ 114.73</td>
+<td align="center">25</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 24.56</td>
+<td align="center">15.44</td>
+<td align="center">91.13</td>
+<td align="center">$ 106.66</td>
+<td align="center">26</td>
+</tr>
+<tr class="even">
+<td align="center">$ 25.78</td>
+<td align="center">14.22</td>
+<td align="center">75.69</td>
+<td align="center">$ 98.18</td>
+<td align="center">27</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 27.07</td>
+<td align="center">12.93</td>
+<td align="center">61.47</td>
+<td align="center">$ 89.27</td>
+<td align="center">28</td>
+</tr>
+<tr class="even">
+<td align="center">$ 28.43</td>
+<td align="center">11.57</td>
+<td align="center">48.55</td>
+<td align="center">$ 79.92</td>
+<td align="center">29</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 29.85</td>
+<td align="center">10.15</td>
+<td align="center">36.97</td>
+<td align="center">$ 70.11</td>
+<td align="center">30</td>
+</tr>
+<tr class="even">
+<td align="center">$ 31.34</td>
+<td align="center">8.66</td>
+<td align="center">26.82</td>
+<td align="center">$ 59.8</td>
+<td align="center">31</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 32.91</td>
+<td align="center">7.09</td>
+<td align="center">18.16</td>
+<td align="center">$ 48.98</td>
+<td align="center">32</td>
+</tr>
+<tr class="even">
+<td align="center">$ 34.55</td>
+<td align="center">5.45</td>
+<td align="center">11.07</td>
+<td align="center">$ 37.62</td>
+<td align="center">33</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 36.28</td>
+<td align="center">3.72</td>
+<td align="center">5.62</td>
+<td align="center">$ 25.68</td>
+<td align="center">34</td>
+</tr>
+<tr class="even">
+<td align="center">$ 38.1</td>
+<td align="center">1.90</td>
+<td align="center">1.90</td>
+<td align="center">$ 13.15</td>
+<td align="center">35</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 40</td>
+<td align="center">0.00</td>
+<td align="center">0.00</td>
+<td align="center">$ 0</td>
+<td align="center">36</td>
 </tr>
 </tbody>
 </table>
 </div>
-<div id="d.-1" class="section level3">
-<h3>D.</h3>
-<p>What do you notice about <span class="math inline">\(A+T_1\)</span>?
-Explain.</p>
+<div id="b." class="section level3">
+<h3>B.</h3>
+<p>Now consider extensions of the model in A. First, assume there is a
+constant marginal cost of extraction c = 3.178025. The discount profits
+in each year are now <span class="math inline">\(\pi_t=\rho^t
+(p_t-c)q_t\)</span>. Second, assume marginal costs are zero again but
+the initial stock of reserves increases to <span class="math inline">\(R_0\)</span> = 948.2253 units. Third, assume
+marginal costs are still zero and reserves go back to <span class="math inline">\(R_0\)</span>=778.1259, but the demand curve
+parameters are now <span class="math inline">\(a\)</span>=40, <span class="math inline">\(b\)</span>=0.75194. A lower value of <span class="math inline">\(b\)</span> means that the demand curve rotates
+outward around <span class="math inline">\(a\)</span>=40.</p>
+<p>List the values of <span class="math inline">\(t\)</span>, <span class="math inline">\(p_t\)</span>, <span class="math inline">\(q_t\)</span>, <span class="math inline">\(R_t\)</span>, and <span class="math inline">\(\pi_t\)</span> for the three cases.</p>
 <p><span style="color: blue;"><strong>Solution</strong></span></p>
-<p>I notice that T is getting picked so that A+T ends up the same as the
-optimal rotation length in part a, where the age is 0. The rotation
-length is the most important in this first rotation length compared to
-the infinite rotations, so it has the same optimal input to the Qt
-function regardless of how old the trees are in the first rotation.</p>
+<p><span style="color: blue;"></p>
+<p></span></p>
+<p>Update the function:</p>
+<pre class="r"><code>case1_func &lt;- function(T, a=40, b=1, delta=0.05, c=3.178025){
+  t=seq(0,T)
+  p &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
+  q &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
+  R &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
+  profits &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
+  
+  p[T+1] = a 
+  R[T+1] = 0
+  profits[T] = 0
+  
+  
+  for(i in (T):1){
+    p[i] = p[i+1]/(delta+1)
+    q[i] = (a-p[i])/b
+    R[i] = R[i+1]+q[i]
+    profits[i] = (p[i]-c)*q[i]
+  }
+
+    profits = profits*(1/(1+delta))^t
+  
+return(data.frame(p, q, R, profits))
+}</code></pre>
+<p><strong>Case 1: Marginal Cost of Extraction, Same Initial
+Reserves</strong></p>
+<pre class="r"><code>value1 = 36
+out_1b1&lt;- case1_func(value1)
+#print(out_1b1$R[1])
+
+out_1b1 &lt;- round(out_1b1,2)
+out_1b1$p &lt;- paste(&quot;$&quot;,out_1b1$p)
+out_1b1$profits &lt;- paste(&quot;$&quot;,out_1b1$profits)
+
+out_1b1$Time &lt;- seq(0,value1)</code></pre>
+<p>The final year should be 36 and the following are the values for pt,
+qt, Rt and Pit:</p>
+<pre class="r"><code>kable(out_1b1, col.names = c(&quot;Price&quot;, &quot;Quantity&quot;, &quot;Reserves&quot;, &quot;Profits&quot;, &quot;Time&quot;), align=&quot;c&quot;)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Price</th>
+<th align="center">Quantity</th>
+<th align="center">Reserves</th>
+<th align="center">Profits</th>
+<th align="center">Time</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">$ 6.91</td>
+<td align="center">33.09</td>
+<td align="center">778.13</td>
+<td align="center">$ 123.38</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">$ 7.25</td>
+<td align="center">32.75</td>
+<td align="center">745.03</td>
+<td align="center">$ 127.05</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 7.61</td>
+<td align="center">32.39</td>
+<td align="center">712.28</td>
+<td align="center">$ 130.31</td>
+<td align="center">2</td>
+</tr>
+<tr class="even">
+<td align="center">$ 7.99</td>
+<td align="center">32.01</td>
+<td align="center">679.90</td>
+<td align="center">$ 133.17</td>
+<td align="center">3</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 8.39</td>
+<td align="center">31.61</td>
+<td align="center">647.89</td>
+<td align="center">$ 135.64</td>
+<td align="center">4</td>
+</tr>
+<tr class="even">
+<td align="center">$ 8.81</td>
+<td align="center">31.19</td>
+<td align="center">616.29</td>
+<td align="center">$ 137.72</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 9.26</td>
+<td align="center">30.74</td>
+<td align="center">585.10</td>
+<td align="center">$ 139.42</td>
+<td align="center">6</td>
+</tr>
+<tr class="even">
+<td align="center">$ 9.72</td>
+<td align="center">30.28</td>
+<td align="center">554.36</td>
+<td align="center">$ 140.74</td>
+<td align="center">7</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 10.2</td>
+<td align="center">29.80</td>
+<td align="center">524.07</td>
+<td align="center">$ 141.69</td>
+<td align="center">8</td>
+</tr>
+<tr class="even">
+<td align="center">$ 10.71</td>
+<td align="center">29.29</td>
+<td align="center">494.28</td>
+<td align="center">$ 142.26</td>
+<td align="center">9</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 11.25</td>
+<td align="center">28.75</td>
+<td align="center">464.99</td>
+<td align="center">$ 142.47</td>
+<td align="center">10</td>
+</tr>
+<tr class="even">
+<td align="center">$ 11.81</td>
+<td align="center">28.19</td>
+<td align="center">436.24</td>
+<td align="center">$ 142.3</td>
+<td align="center">11</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 12.4</td>
+<td align="center">27.60</td>
+<td align="center">408.05</td>
+<td align="center">$ 141.76</td>
+<td align="center">12</td>
+</tr>
+<tr class="even">
+<td align="center">$ 13.02</td>
+<td align="center">26.98</td>
+<td align="center">380.46</td>
+<td align="center">$ 140.85</td>
+<td align="center">13</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 13.67</td>
+<td align="center">26.33</td>
+<td align="center">353.48</td>
+<td align="center">$ 139.56</td>
+<td align="center">14</td>
+</tr>
+<tr class="even">
+<td align="center">$ 14.36</td>
+<td align="center">25.64</td>
+<td align="center">327.15</td>
+<td align="center">$ 137.89</td>
+<td align="center">15</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 15.08</td>
+<td align="center">24.92</td>
+<td align="center">301.51</td>
+<td align="center">$ 135.85</td>
+<td align="center">16</td>
+</tr>
+<tr class="even">
+<td align="center">$ 15.83</td>
+<td align="center">24.17</td>
+<td align="center">276.59</td>
+<td align="center">$ 133.42</td>
+<td align="center">17</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 16.62</td>
+<td align="center">23.38</td>
+<td align="center">252.42</td>
+<td align="center">$ 130.59</td>
+<td align="center">18</td>
+</tr>
+<tr class="even">
+<td align="center">$ 17.45</td>
+<td align="center">22.55</td>
+<td align="center">229.04</td>
+<td align="center">$ 127.37</td>
+<td align="center">19</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 18.32</td>
+<td align="center">21.68</td>
+<td align="center">206.49</td>
+<td align="center">$ 123.74</td>
+<td align="center">20</td>
+</tr>
+<tr class="even">
+<td align="center">$ 19.24</td>
+<td align="center">20.76</td>
+<td align="center">184.81</td>
+<td align="center">$ 119.69</td>
+<td align="center">21</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 20.2</td>
+<td align="center">19.80</td>
+<td align="center">164.05</td>
+<td align="center">$ 115.22</td>
+<td align="center">22</td>
+</tr>
+<tr class="even">
+<td align="center">$ 21.21</td>
+<td align="center">18.79</td>
+<td align="center">144.26</td>
+<td align="center">$ 110.31</td>
+<td align="center">23</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 22.27</td>
+<td align="center">17.73</td>
+<td align="center">125.47</td>
+<td align="center">$ 104.96</td>
+<td align="center">24</td>
+</tr>
+<tr class="even">
+<td align="center">$ 23.39</td>
+<td align="center">16.61</td>
+<td align="center">107.74</td>
+<td align="center">$ 99.14</td>
+<td align="center">25</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 24.56</td>
+<td align="center">15.44</td>
+<td align="center">91.13</td>
+<td align="center">$ 92.85</td>
+<td align="center">26</td>
+</tr>
+<tr class="even">
+<td align="center">$ 25.78</td>
+<td align="center">14.22</td>
+<td align="center">75.69</td>
+<td align="center">$ 86.08</td>
+<td align="center">27</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 27.07</td>
+<td align="center">12.93</td>
+<td align="center">61.47</td>
+<td align="center">$ 78.79</td>
+<td align="center">28</td>
+</tr>
+<tr class="even">
+<td align="center">$ 28.43</td>
+<td align="center">11.57</td>
+<td align="center">48.55</td>
+<td align="center">$ 70.99</td>
+<td align="center">29</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 29.85</td>
+<td align="center">10.15</td>
+<td align="center">36.97</td>
+<td align="center">$ 62.64</td>
+<td align="center">30</td>
+</tr>
+<tr class="even">
+<td align="center">$ 31.34</td>
+<td align="center">8.66</td>
+<td align="center">26.82</td>
+<td align="center">$ 53.74</td>
+<td align="center">31</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 32.91</td>
+<td align="center">7.09</td>
+<td align="center">18.16</td>
+<td align="center">$ 44.25</td>
+<td align="center">32</td>
+</tr>
+<tr class="even">
+<td align="center">$ 34.55</td>
+<td align="center">5.45</td>
+<td align="center">11.07</td>
+<td align="center">$ 34.16</td>
+<td align="center">33</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 36.28</td>
+<td align="center">3.72</td>
+<td align="center">5.62</td>
+<td align="center">$ 23.43</td>
+<td align="center">34</td>
+</tr>
+<tr class="even">
+<td align="center">$ 38.1</td>
+<td align="center">1.90</td>
+<td align="center">1.90</td>
+<td align="center">$ 12.06</td>
+<td align="center">35</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 40</td>
+<td align="center">0.00</td>
+<td align="center">0.00</td>
+<td align="center">$ 0</td>
+<td align="center">36</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Case 2: No Marginal Cost of Extraction, More Initial
+Reserves</strong></p>
+<pre class="r"><code>value2 = 41
+out_1b2&lt;- exhaust_fun(value2)
+#print(out_1b2$R[1])
+
+out_1b2 &lt;- round(out_1b2,2)
+out_1b2$p &lt;- paste(&quot;$&quot;,out_1b2$p)
+out_1b2$profits &lt;- paste(&quot;$&quot;,out_1b2$profits)
+
+out_1b2$Time &lt;- seq(0,value2)</code></pre>
+<p>The final year should be 41 and the following are the values for pt,
+qt, Rt and Pit:</p>
+<pre class="r"><code>kable(out_1b2, col.names = c(&quot;Price&quot;, &quot;Quantity&quot;, &quot;Reserves&quot;, &quot;Profits&quot;, &quot;Time&quot;), align=&quot;c&quot;)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Price</th>
+<th align="center">Quantity</th>
+<th align="center">Reserves</th>
+<th align="center">Profits</th>
+<th align="center">Time</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">$ 5.41</td>
+<td align="center">34.59</td>
+<td align="center">948.23</td>
+<td align="center">$ 187.17</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">$ 5.68</td>
+<td align="center">34.32</td>
+<td align="center">913.64</td>
+<td align="center">$ 185.7</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 5.97</td>
+<td align="center">34.03</td>
+<td align="center">879.32</td>
+<td align="center">$ 184.17</td>
+<td align="center">2</td>
+</tr>
+<tr class="even">
+<td align="center">$ 6.26</td>
+<td align="center">33.74</td>
+<td align="center">845.28</td>
+<td align="center">$ 182.55</td>
+<td align="center">3</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 6.58</td>
+<td align="center">33.42</td>
+<td align="center">811.55</td>
+<td align="center">$ 180.86</td>
+<td align="center">4</td>
+</tr>
+<tr class="even">
+<td align="center">$ 6.91</td>
+<td align="center">33.09</td>
+<td align="center">778.13</td>
+<td align="center">$ 179.08</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 7.25</td>
+<td align="center">32.75</td>
+<td align="center">745.03</td>
+<td align="center">$ 177.21</td>
+<td align="center">6</td>
+</tr>
+<tr class="even">
+<td align="center">$ 7.61</td>
+<td align="center">32.39</td>
+<td align="center">712.28</td>
+<td align="center">$ 175.25</td>
+<td align="center">7</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 7.99</td>
+<td align="center">32.01</td>
+<td align="center">679.90</td>
+<td align="center">$ 173.19</td>
+<td align="center">8</td>
+</tr>
+<tr class="even">
+<td align="center">$ 8.39</td>
+<td align="center">31.61</td>
+<td align="center">647.89</td>
+<td align="center">$ 171.02</td>
+<td align="center">9</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 8.81</td>
+<td align="center">31.19</td>
+<td align="center">616.29</td>
+<td align="center">$ 168.75</td>
+<td align="center">10</td>
+</tr>
+<tr class="even">
+<td align="center">$ 9.26</td>
+<td align="center">30.74</td>
+<td align="center">585.10</td>
+<td align="center">$ 166.37</td>
+<td align="center">11</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 9.72</td>
+<td align="center">30.28</td>
+<td align="center">554.36</td>
+<td align="center">$ 163.86</td>
+<td align="center">12</td>
+</tr>
+<tr class="even">
+<td align="center">$ 10.2</td>
+<td align="center">29.80</td>
+<td align="center">524.07</td>
+<td align="center">$ 161.24</td>
+<td align="center">13</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 10.71</td>
+<td align="center">29.29</td>
+<td align="center">494.28</td>
+<td align="center">$ 158.47</td>
+<td align="center">14</td>
+</tr>
+<tr class="even">
+<td align="center">$ 11.25</td>
+<td align="center">28.75</td>
+<td align="center">464.99</td>
+<td align="center">$ 155.58</td>
+<td align="center">15</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 11.81</td>
+<td align="center">28.19</td>
+<td align="center">436.24</td>
+<td align="center">$ 152.53</td>
+<td align="center">16</td>
+</tr>
+<tr class="even">
+<td align="center">$ 12.4</td>
+<td align="center">27.60</td>
+<td align="center">408.05</td>
+<td align="center">$ 149.34</td>
+<td align="center">17</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 13.02</td>
+<td align="center">26.98</td>
+<td align="center">380.46</td>
+<td align="center">$ 145.98</td>
+<td align="center">18</td>
+</tr>
+<tr class="even">
+<td align="center">$ 13.67</td>
+<td align="center">26.33</td>
+<td align="center">353.48</td>
+<td align="center">$ 142.46</td>
+<td align="center">19</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 14.36</td>
+<td align="center">25.64</td>
+<td align="center">327.15</td>
+<td align="center">$ 138.76</td>
+<td align="center">20</td>
+</tr>
+<tr class="even">
+<td align="center">$ 15.08</td>
+<td align="center">24.92</td>
+<td align="center">301.51</td>
+<td align="center">$ 134.87</td>
+<td align="center">21</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 15.83</td>
+<td align="center">24.17</td>
+<td align="center">276.59</td>
+<td align="center">$ 130.79</td>
+<td align="center">22</td>
+</tr>
+<tr class="even">
+<td align="center">$ 16.62</td>
+<td align="center">23.38</td>
+<td align="center">252.42</td>
+<td align="center">$ 126.51</td>
+<td align="center">23</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 17.45</td>
+<td align="center">22.55</td>
+<td align="center">229.04</td>
+<td align="center">$ 122.01</td>
+<td align="center">24</td>
+</tr>
+<tr class="even">
+<td align="center">$ 18.32</td>
+<td align="center">21.68</td>
+<td align="center">206.49</td>
+<td align="center">$ 117.29</td>
+<td align="center">25</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 19.24</td>
+<td align="center">20.76</td>
+<td align="center">184.81</td>
+<td align="center">$ 112.33</td>
+<td align="center">26</td>
+</tr>
+<tr class="even">
+<td align="center">$ 20.2</td>
+<td align="center">19.80</td>
+<td align="center">164.05</td>
+<td align="center">$ 107.13</td>
+<td align="center">27</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 21.21</td>
+<td align="center">18.79</td>
+<td align="center">144.26</td>
+<td align="center">$ 101.66</td>
+<td align="center">28</td>
+</tr>
+<tr class="even">
+<td align="center">$ 22.27</td>
+<td align="center">17.73</td>
+<td align="center">125.47</td>
+<td align="center">$ 95.92</td>
+<td align="center">29</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 23.39</td>
+<td align="center">16.61</td>
+<td align="center">107.74</td>
+<td align="center">$ 89.9</td>
+<td align="center">30</td>
+</tr>
+<tr class="even">
+<td align="center">$ 24.56</td>
+<td align="center">15.44</td>
+<td align="center">91.13</td>
+<td align="center">$ 83.57</td>
+<td align="center">31</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 25.78</td>
+<td align="center">14.22</td>
+<td align="center">75.69</td>
+<td align="center">$ 76.92</td>
+<td align="center">32</td>
+</tr>
+<tr class="even">
+<td align="center">$ 27.07</td>
+<td align="center">12.93</td>
+<td align="center">61.47</td>
+<td align="center">$ 69.95</td>
+<td align="center">33</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 28.43</td>
+<td align="center">11.57</td>
+<td align="center">48.55</td>
+<td align="center">$ 62.62</td>
+<td align="center">34</td>
+</tr>
+<tr class="even">
+<td align="center">$ 29.85</td>
+<td align="center">10.15</td>
+<td align="center">36.97</td>
+<td align="center">$ 54.93</td>
+<td align="center">35</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 31.34</td>
+<td align="center">8.66</td>
+<td align="center">26.82</td>
+<td align="center">$ 46.86</td>
+<td align="center">36</td>
+</tr>
+<tr class="even">
+<td align="center">$ 32.91</td>
+<td align="center">7.09</td>
+<td align="center">18.16</td>
+<td align="center">$ 38.38</td>
+<td align="center">37</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 34.55</td>
+<td align="center">5.45</td>
+<td align="center">11.07</td>
+<td align="center">$ 29.47</td>
+<td align="center">38</td>
+</tr>
+<tr class="even">
+<td align="center">$ 36.28</td>
+<td align="center">3.72</td>
+<td align="center">5.62</td>
+<td align="center">$ 20.12</td>
+<td align="center">39</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 38.1</td>
+<td align="center">1.90</td>
+<td align="center">1.90</td>
+<td align="center">$ 10.31</td>
+<td align="center">40</td>
+</tr>
+<tr class="even">
+<td align="center">$ 40</td>
+<td align="center">0.00</td>
+<td align="center">0.00</td>
+<td align="center">$ 0</td>
+<td align="center">41</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Case 3: No Marginal Cost of Extraction, Less Steep Demand
+Curve</strong></p>
+<pre class="r"><code>case3_fun &lt;- function(T, a=40, b=0.75194, delta=0.05){
+  t=seq(0,T)
+  p &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
+  q &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
+  R &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
+  profits &lt;- vector(mode=&quot;numeric&quot;, length=(T+1))
+  
+  p[T+1] = a 
+  R[T+1] = 0
+  profits[T] = 0
+  
+  
+  for(i in (T):1){
+    p[i] = p[i+1]/(delta+1)
+    q[i] = (a-p[i])/b
+    R[i] = R[i+1]+q[i]
+    profits[i] = p[i]*q[i]
+  }
+
+    profits = profits*(1/(1+delta))^t
+  
+return(data.frame(p, q, R, profits))
+}</code></pre>
+<pre class="r"><code>value3 = 30
+out_1b3&lt;- case3_fun(value3)
+#print(out_1b3$R[1])
+
+out_1b3 &lt;- round(out_1b3,2)
+out_1b3$p &lt;- paste(&quot;$&quot;,out_1b3$p)
+out_1b3$profits &lt;- paste(&quot;$&quot;,out_1b3$profits)
+
+out_1b3$Time &lt;- seq(0,value3)</code></pre>
+<p>The final year should be 30 and the following are the values for pt,
+qt, Rt and Pit:</p>
+<pre class="r"><code>kable(out_1b3, col.names = c(&quot;Price&quot;, &quot;Quantity&quot;, &quot;Reserves&quot;, &quot;Profits&quot;, &quot;Time&quot;), align=&quot;c&quot;)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Price</th>
+<th align="center">Quantity</th>
+<th align="center">Reserves</th>
+<th align="center">Profits</th>
+<th align="center">Time</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">$ 9.26</td>
+<td align="center">40.89</td>
+<td align="center">778.12</td>
+<td align="center">$ 378.42</td>
+<td align="center">0</td>
+</tr>
+<tr class="even">
+<td align="center">$ 9.72</td>
+<td align="center">40.27</td>
+<td align="center">737.24</td>
+<td align="center">$ 372.72</td>
+<td align="center">1</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 10.2</td>
+<td align="center">39.63</td>
+<td align="center">696.96</td>
+<td align="center">$ 366.74</td>
+<td align="center">2</td>
+</tr>
+<tr class="even">
+<td align="center">$ 10.71</td>
+<td align="center">38.95</td>
+<td align="center">657.34</td>
+<td align="center">$ 360.46</td>
+<td align="center">3</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 11.25</td>
+<td align="center">38.23</td>
+<td align="center">618.39</td>
+<td align="center">$ 353.87</td>
+<td align="center">4</td>
+</tr>
+<tr class="even">
+<td align="center">$ 11.81</td>
+<td align="center">37.49</td>
+<td align="center">580.16</td>
+<td align="center">$ 346.94</td>
+<td align="center">5</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 12.4</td>
+<td align="center">36.70</td>
+<td align="center">542.67</td>
+<td align="center">$ 339.68</td>
+<td align="center">6</td>
+</tr>
+<tr class="even">
+<td align="center">$ 13.02</td>
+<td align="center">35.88</td>
+<td align="center">505.97</td>
+<td align="center">$ 332.04</td>
+<td align="center">7</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 13.67</td>
+<td align="center">35.01</td>
+<td align="center">470.09</td>
+<td align="center">$ 324.03</td>
+<td align="center">8</td>
+</tr>
+<tr class="even">
+<td align="center">$ 14.36</td>
+<td align="center">34.10</td>
+<td align="center">435.08</td>
+<td align="center">$ 315.61</td>
+<td align="center">9</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 15.08</td>
+<td align="center">33.15</td>
+<td align="center">400.98</td>
+<td align="center">$ 306.78</td>
+<td align="center">10</td>
+</tr>
+<tr class="even">
+<td align="center">$ 15.83</td>
+<td align="center">32.14</td>
+<td align="center">367.83</td>
+<td align="center">$ 297.5</td>
+<td align="center">11</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 16.62</td>
+<td align="center">31.09</td>
+<td align="center">335.69</td>
+<td align="center">$ 287.76</td>
+<td align="center">12</td>
+</tr>
+<tr class="even">
+<td align="center">$ 17.45</td>
+<td align="center">29.99</td>
+<td align="center">304.60</td>
+<td align="center">$ 277.53</td>
+<td align="center">13</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 18.32</td>
+<td align="center">28.83</td>
+<td align="center">274.61</td>
+<td align="center">$ 266.79</td>
+<td align="center">14</td>
+</tr>
+<tr class="even">
+<td align="center">$ 19.24</td>
+<td align="center">27.61</td>
+<td align="center">245.78</td>
+<td align="center">$ 255.51</td>
+<td align="center">15</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 20.2</td>
+<td align="center">26.33</td>
+<td align="center">218.17</td>
+<td align="center">$ 243.67</td>
+<td align="center">16</td>
+</tr>
+<tr class="even">
+<td align="center">$ 21.21</td>
+<td align="center">24.98</td>
+<td align="center">191.85</td>
+<td align="center">$ 231.24</td>
+<td align="center">17</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 22.27</td>
+<td align="center">23.57</td>
+<td align="center">166.86</td>
+<td align="center">$ 218.18</td>
+<td align="center">18</td>
+</tr>
+<tr class="even">
+<td align="center">$ 23.39</td>
+<td align="center">22.09</td>
+<td align="center">143.29</td>
+<td align="center">$ 204.48</td>
+<td align="center">19</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 24.56</td>
+<td align="center">20.54</td>
+<td align="center">121.19</td>
+<td align="center">$ 190.08</td>
+<td align="center">20</td>
+</tr>
+<tr class="even">
+<td align="center">$ 25.78</td>
+<td align="center">18.91</td>
+<td align="center">100.66</td>
+<td align="center">$ 174.97</td>
+<td align="center">21</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 27.07</td>
+<td align="center">17.19</td>
+<td align="center">81.75</td>
+<td align="center">$ 159.1</td>
+<td align="center">22</td>
+</tr>
+<tr class="even">
+<td align="center">$ 28.43</td>
+<td align="center">15.39</td>
+<td align="center">64.56</td>
+<td align="center">$ 142.44</td>
+<td align="center">23</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 29.85</td>
+<td align="center">13.50</td>
+<td align="center">49.17</td>
+<td align="center">$ 124.95</td>
+<td align="center">24</td>
+</tr>
+<tr class="even">
+<td align="center">$ 31.34</td>
+<td align="center">11.52</td>
+<td align="center">35.67</td>
+<td align="center">$ 106.58</td>
+<td align="center">25</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 32.91</td>
+<td align="center">9.43</td>
+<td align="center">24.15</td>
+<td align="center">$ 87.29</td>
+<td align="center">26</td>
+</tr>
+<tr class="even">
+<td align="center">$ 34.55</td>
+<td align="center">7.24</td>
+<td align="center">14.72</td>
+<td align="center">$ 67.04</td>
+<td align="center">27</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 36.28</td>
+<td align="center">4.95</td>
+<td align="center">7.48</td>
+<td align="center">$ 45.77</td>
+<td align="center">28</td>
+</tr>
+<tr class="even">
+<td align="center">$ 38.1</td>
+<td align="center">2.53</td>
+<td align="center">2.53</td>
+<td align="center">$ 23.44</td>
+<td align="center">29</td>
+</tr>
+<tr class="odd">
+<td align="center">$ 40</td>
+<td align="center">0.00</td>
+<td align="center">0.00</td>
+<td align="center">$ 0</td>
+<td align="center">30</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="c." class="section level3">
+<h3>C.</h3>
+<p>What is the final year <span class="math inline">\(T\)</span> for the
+three cases? Explain why they are different from part A.</p>
+<p><span style="color: blue;"><strong>Solution</strong></span></p>
+<p><span style="color: blue;"></p>
+<p></span></p>
+<pre class="r"><code>case = c(1, 2, 3)
+fyear = c(value1, value2, value3)
+
+partC &lt;- data.frame(case, fyear)
+kable(partC, col.names = c(&quot;Case&quot;, &quot;Final Year&quot;), align=&quot;c&quot;)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="center">Case</th>
+<th align="center">Final Year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="center">1</td>
+<td align="center">36</td>
+</tr>
+<tr class="even">
+<td align="center">2</td>
+<td align="center">41</td>
+</tr>
+<tr class="odd">
+<td align="center">3</td>
+<td align="center">30</td>
+</tr>
+</tbody>
+</table>
+<p>In Case 1, if you drew the Hotelling model 4 quadrants, it would look
+the exact same as in 1A. Benefits are not modeled in the Hotelling model
+so changing costs only affects the net benefits and has no affect on
+quantity, price, or time.</p>
+<p>In Case 2, the Hotelling model would look different. The initial
+reserves have increased but there is no change in demand, which must
+remain constant (QII looks the same as it does in 1A). As a result, time
+must increase to account for the higher value for initial reserves (time
+moves farther away from the origin between QIII/QIV). Time in case 2
+&gt; Time in 1A to allow for extraction of all reserves, keeping demand
+constant</p>
+<p>In Case 3, the Hotelling model would also look different. Now, we
+have changed the elasticity of demand. This pushes QT (quantity
+extracted in time T) farther left on the x axis in QIII. However,
+reserves stay constant, so time must decrease here to have the same area
+under the curve in QIII as we do in part 1A. Time in case 3 &lt; time in
+1A to extract the same reserves.</p>
+<p>In c</p>
+</div>
+<div id="d." class="section level3">
+<h3>D.</h3>
+<p>Compare the path of prices in the three cases to that in part A.
+Explain the differences.</p>
+<p><span style="color: blue;"><strong>Solution</strong></span></p>
+<p><span style="color: blue;"></p>
+<p></span></p>
+<p>In case 1, the path of the prices is the same. As previously
+mentioned, the quadrants of the Hotelling model look the same as in part
+A. Price always increases at the rate of interest, so if the time
+doesn’t change (which it doesn’t – see part C), initial price will be
+the same as well, because it has the same amount of time to reach a
+value of a from an initial price. p0 case 1 = p0 1A</p>
+<p>In case 2, it takes longer to get to a value of a = 40. This is
+because time has increased to account for more initial reserves with the
+same demand curve. If T increases, then p has longer to get to a value
+of a = 40, as it will always increase at the rate of interest. If price
+is increasing due to the same formula with the same endpoint, but there
+are more iterations, it must start at a smaller initial value, and p0
+case 2 &lt; p0 part 1A.</p>
+<p>In case 3, time has decreased to reflect the change in demand with
+the same total amount of initial reserves. Price, as always, increases
+at the rate of interest, but it has less time to get to P=a=$40 in this
+case, so it must start at a higher value because it has fewer
+iteration.</p>
+<p>In all cases, the final price is $40 because that is the choke price
+given by the same inverse demand curve in each case.</p>
+</div>
+<div id="e." class="section level3">
+<h3>E.</h3>
+<p>What happens to the present discounted value of profits (in other
+words, the value of the reserves <span class="math inline">\(R_0\)</span>) in the three cases compared to part
+A? Explain the differences.</p>
+<p><span style="color: blue;"><strong>Solution</strong></span></p>
+<p><span style="color: blue;"></p>
+<p></span></p>
+<p>In case 1,</p>
 </div>
 </div>
 

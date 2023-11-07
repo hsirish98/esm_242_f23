@@ -30,20 +30,8 @@ Before you solve the problem for six rotations, find the optimal rotation when o
 ```{r}
 obj_func <- function(choice, a, b, c, p, delta, rotations){
   ##initialize benefit and state vectors to amount of rotations+1 (to include t=0)
-   bens = vector(mode="numeric",length=(rotations+1))
-   state = vector(mode="numeric", length=(rotations+1))
-   
-   ##initial state (discounting time) is 0, benefits are the costs from planting trees
-   state[1] = 0
-   bens[1] = -c
-
-   ##second state is initial state (0) plus the choice that's maximized
-   state[2] = state[1] + choice
-   bens[2] = p*exp(a-(b/choice)) ##benefits are the price *Q(this time period/state[2]) with NO c subtracted
-   
-   rho = (1/(1+delta))
-   pv = bens*(rho^state)
-   npv = sum(pv)
+    
+   npv = exp(a-b/choice[1])*p*exp(-delta*choice[1]) - c
    return(-npv)
 }
 ```
@@ -53,14 +41,13 @@ obj_func <- function(choice, a, b, c, p, delta, rotations){
 
 options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-8,maxeval=16000)
 
- out_1a=nloptr(x0=1,eval_f=obj_func,
+ out_1a=nloptr(x0=30,eval_f=obj_func,
               lb=0,
               opts = options, 
               a=10, b=53.27, c=250, p=1.5, delta=0.05, rotations=1)
  
  obj_1a = -out_1a$objective
 
- print(out_1a$solution)
  
 ```
 
@@ -80,24 +67,22 @@ Now solve the problem for six consecutive rotations.  What are the six rotation 
 ```{r}
 
 obj_func <- function(choice, a, b, c, p, delta, rotations){
+  
    bens = vector(mode="numeric",length=(rotations+1))
    state = vector(mode="numeric", length=(rotations+1))
+
+   state[1] = choice[1]
+   bens[1] = p*exp(a-(b/choice[1]))*exp(-delta*state[1]) - c
    
-   state[1] = 0
-   bens[1] = -c
 
     ##this time, update state everything to state from period before + the new optimized rotation length
    
-  for(i in 2:(rotations+1)){ ##until the second to last time (first item in vector is time = 0 and next is time = 1 so I'm going to time = 5 or the 6th item in the vector, using rotations=6)
+  for(i in 2:(rotations)){ 
    state[i] = state[i-1] + choice[i] 
-   bens[i] = p*exp(a-(b/choice[i])) - (ifelse(i==(rotations+1), 0, c))
+   bens[i] = p*exp(a-(b/choice[i]))*exp(-delta*state[i])- c*exp(-delta*state[i-1])
   }
-   # state[rotations+1] = state[rotations] + choice[rotations+1] ##last one 
-   # bens[rotations+1] = p*exp(a-(b/choice[rotations+1])) 
-   # 
-   rho = (1/(1+delta))
-   pv = bens*(rho^state)
-   npv = sum(pv)
+
+   npv = sum(bens)
    return(-npv)
 }
 
@@ -108,14 +93,13 @@ obj_func <- function(choice, a, b, c, p, delta, rotations){
 options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-8,maxeval=16000)
 
 
-out_1b <- nloptr(x0=rep(1, times=7),eval_f=obj_func,
-              lb=rep(0,times=7),
+out_1b <- nloptr(x0=rep(30, times=6),eval_f=obj_func,
+              lb=rep(0,times=6),
               opts = options, 
               a=10, b=53.27, c=250, p=1.5, delta=0.05, rotations=6)
  
  obj_1b = -out_1b$objective
 
- print(out_1b$solution)
 ```
 
 PVNB is maximized to $`r format(obj_1b, scientific=FALSE)`
@@ -135,6 +119,8 @@ Explain why $T_1$ through $T_5$ are shorter than $T_6$?
 
 </span>
 
+T6 is the only period that doesn't have to balance the benefits of harvesting with the costs of planting the trees. So there is a benefit to letting the trees age more before harvesting to increase the timber volume and maximize Q(t)
+
 ### D.
 
 What happens to $T_1$ through $T_5$ when the cost of replanting the stand increases to 500? Explain. Why doesn't $T_6$ change with the higher replanting cost?
@@ -153,9 +139,8 @@ What happens to $T_1$ through $T_5$ when the cost of replanting the stand increa
 options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-8,maxeval=16000)
 
 
-
-out_1d <- nloptr(x0=rep(1, times=7),eval_f=obj_func,
-              lb=rep(0,times=7),
+out_1d <-nloptr(x0=rep(30, times=6),eval_f=obj_func,
+              lb=rep(0,times=6),
               opts = options, 
               a=10, b=53.27, c=500, p=1.5, delta=0.05, rotations=6)
  
@@ -164,6 +149,8 @@ out_1d <- nloptr(x0=rep(1, times=7),eval_f=obj_func,
  print(out_1d$solution)
 
 ```
+
+Since the cost of planting is higher, in T 1-5, we must allow the timber volume to grow more to offset the cost of planting. In other words, Qt needs to be higher to offset the cost of replanting. However, in time 6, there is no planting cost to offset, so it's still the optimal cost that we got with one rotation or with the final rotation in the previous iteration of the problem with the planting cost of 250. 
 
 ### E.
 
@@ -177,6 +164,7 @@ Compare your answer to part a (the single rotation) to $T_6$. Why are they the s
 
 </span>
 
+As with part C, the final time period is the only one where there does not need to be a  balance between the cost of replanting and the benefit of harvesting the plants, so the rotation length is longer to allow for more volume of timber to be harvested.
 
 ### F
 
@@ -184,7 +172,31 @@ Now solve for the optimal rotation when an infinite number of rotations are done
 
 ```{r}
 
+
+obj_func_inf <- function(choice, a, b, c, p, delta){
+  ##initialize benefit and state vectors to amount of rotations+1 (to include t=0)
+    
+   npv = (p*exp(a-(b/choice))*exp(-delta*choice) - c)/(1-exp(-delta*choice))
+   return(-npv)
+}
+
+
 ```
+
+```{r}
+
+options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-8,maxeval=16000)
+
+ out_1f=nloptr(x0=30,eval_f=obj_func_inf,
+              lb=0,
+              opts = options, 
+              a=10, b=53.27, c=250, p=1.5, delta=0.05)
+ 
+
+obj_1f = -out_1f$objective
+
+```
+The PVNB in this case is $`r format(obj_1f, scientific=FALSE)` , which is very similar in magnitude to 6 rotations. If I rerun the finite rotation length values and increase the rotations, I see that there is very little difference in the net benefits from an additional rotation. This leads me to believe that in every additional period, the net difference between the planting cost and the added benefits of harvesting (with discounting factored in), is quite small, so adding a bunch more rotations doesn't make much of a difference, even to infinity. 
 
 
 
@@ -200,22 +212,38 @@ If the stand is grown for an infinite number of rotations, what is the optimal r
 
 
 
+
 ```{r}
 
 
 #Use this options list
 options=list("algorithm"="NLOPT_LN_COBYLA",xtol_rel=1e-15,maxeval=16000)
 
+ out_2a=nloptr(x0=30,eval_f=obj_func_inf,
+              lb=0,
+              opts = options, 
+              a=13, b=185, c=1000, p=1.78, delta=0.05)
 
+obj_2a = -out_2a$objective
 ```
 
-
+The optimal rotation length when the initial age is 0 is `r round(out_2a$solution, 2)` years. The present discounted value of net timber revenues is $`r format(obj_2a, scientific=FALSE)` 
 
 ### B.
 
 Suppose that the initial age of the stand is A and $T_1$ is the additional number of years the stand is grown until harvest.  Then, $A+T_1$ is the age of the stand at the end of the first rotation. Assuming the first rotation is followed by an infinite number of rotations, write an expression for present discounted value of net timber revenues from an infinite number of rotations (including the first one).
 
 <span style="color: blue;">**Solution**</span>
+
+The following code would be how I do this expression:
+```{r}
+obj_func_withage <- function(choice, A, a, b, c, p, delta){
+  ##initialize benefit and state vectors to amount of rotations+1 (to include t=0)
+    
+   npv = p*exp(a-(b/(A+choice)))*exp(-delta*choice) -c + obj_2a*exp(-delta*choice) -c
+   return(-npv)
+}
+```
 
 
 
@@ -229,8 +257,41 @@ Using your formula in b, and assuming A=30, what is the optimal value of $T_1$? 
 
 ```{r}
 
+out_2c30 =nloptr(x0=30,eval_f=obj_func_withage,
+              lb=0,
+              opts = options, 
+              a=13, A=30, b=185, c=1000, p=1.78, delta=0.05)
 
+out_2c40 =nloptr(x0=30,eval_f=obj_func_withage,
+              lb=0,
+              opts = options, 
+              a=13, A=40, b=185, c=1000, p=1.78, delta=0.05)
+
+out_2c60 =nloptr(x0=30,eval_f=obj_func_withage,
+              lb=0,
+              opts = options, 
+              a=13, A=60.14, b=185, c=1000, p=1.78, delta=0.05)
+
+out_2c90 =nloptr(x0=30,eval_f=obj_func_withage,
+              lb=0,
+              opts = options, 
+              a=13, A=90, b=185, c=1000, p=1.78, delta=0.05)
+
+Age = c(30, 40, 60.14, 90)
+
+Rotation_Length = round(c(out_2c30$solution, out_2c40$solution, out_2c60$solution, out_2c90$solution ),2)
+
+NBs = (-1)*round(c(out_2c30$objective, out_2c40$objective, out_2c60$objective, out_2c90$objective ),2)
 ```
+
+Here are the optimal values of T vs the age of the tree:
+
+```{r}
+
+results_2c = data.frame(Age, Rotation_Length, NBs)
+kable(results_2c)
+```
+
 
 ### D.
 
@@ -238,6 +299,7 @@ What do you notice about $A+T_1$?  Explain.
 
 <span style="color: blue;">**Solution**</span>
 
+I notice that T is getting picked so that A+T ends up the same as the optimal rotation length in part a, where the age is 0. The rotation length is the most important in this first rotation length compared to the infinite rotations, so it has the same optimal input to the Qt function regardless of how old the trees are in the first rotation.
 
 
 

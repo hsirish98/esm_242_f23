@@ -1,0 +1,308 @@
+---
+title: "HW 4"
+author: "Andrew Plantinga"
+date: "2023-10-31"
+output:
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r}
+library(tidyverse)
+library(nloptr)
+library(knitr)
+```
+
+
+## Exhaustible Resource Extraction {.tabset}
+
+
+Suppose there is an exhaustible resource that is costlessly extracted.  The inverse demand curve for the resource is  $p_t=a-bq_t$ where $q_t$ is the quantity extracted in time t and a=40, b=1.  The discount rate is $\delta=0.05$  and the initial stock of reserves is $R_0$ = 778.1259 units.  Set up a program to find the competitive market equilibrium and show the equilibrium values of $p_t$, $q_t$, $R_t$, and  $\pi_t$ in a table.  $R_t$ is the reserves remaining in year t and $\pi_t$ is the discounted profits in each year (without costs, they are just equal to $\rho^tp_tq_t$ ). [Hint: it is easiest to start with the price in the last period and work backwards through time.]
+
+### A. 
+
+List the values of $t$, $p_t$, $q_t$, $R_t$, and  $\pi_t$ in a table below.  What should be the final (year T) values of $p_T$ and $R_T$? Why?  Does the resource get more scarce over time?  What is your evidence?
+
+<span style="color: blue;">**Solution**</span>
+
+
+Creating exhaust function:
+```{r}
+
+exhaust_fun <- function(T, a=40, b=1, delta=0.05){
+  t=seq(0,T)
+  p <- vector(mode="numeric", length=(T+1))
+  q <- vector(mode="numeric", length=(T+1))
+  R <- vector(mode="numeric", length=(T+1))
+  profits <- vector(mode="numeric", length=(T+1))
+  
+  p[T+1] = a 
+  R[T+1] = 0
+  profits[T] = 0
+  
+  
+  for(i in (T):1){
+    p[i] = p[i+1]/(delta+1)
+    q[i] = (a-p[i])/b
+    R[i] = R[i+1]+q[i]
+    profits[i] = p[i]*q[i]
+  }
+
+    profits = profits*(1/(1+delta))^t
+  
+return(data.frame(p, q, R, profits))
+}
+
+```
+
+Test values until the right answer:
+```{r}
+
+value = 36
+
+out_1a <- exhaust_fun(value)
+
+#print(out_1a$R[1])
+
+npv_a <- sum(out_1a$profits)
+
+out_1a <- round(out_1a,2)
+
+out_1a$p <- paste("$",out_1a$p)
+out_1a$profits <- paste("$",out_1a$profits)
+
+out_1a$Time <- seq(0,value)
+
+
+```
+
+The final year should be `r value` and the following are the values for pt, qt, Rt and Pit:
+
+```{r}
+kable(out_1a, col.names = c("Price", "Quantity", "Reserves", "Profits", "Time"), align="c")
+```
+
+
+
+### B.
+
+Now consider extensions of the model in A.  First, assume there is a constant marginal cost of extraction c = 3.178025.  The discount profits in each year are now $\pi_t=\rho^t (p_t-c)q_t$.  Second, assume marginal costs are zero again but the initial stock of reserves increases to $R_0$ = 948.2253 units.  Third, assume marginal costs are still zero and reserves go back to $R_0$=778.1259, but the demand curve parameters are now $a$=40, $b$=0.75194.  A lower value of $b$ means that the demand curve rotates outward around $a$=40. 
+
+List the values of $t$, $p_t$, $q_t$, $R_t$, and  $\pi_t$ for the three cases. 
+
+
+<span style="color: blue;">**Solution**</span>
+
+<span style="color: blue;">
+
+</span>
+
+Update the function:
+```{r}
+case1_func <- function(T, a=40, b=1, delta=0.05, c=3.178025){
+  t=seq(0,T)
+  p <- vector(mode="numeric", length=(T+1))
+  q <- vector(mode="numeric", length=(T+1))
+  R <- vector(mode="numeric", length=(T+1))
+  profits <- vector(mode="numeric", length=(T+1))
+  
+  p[T+1] = a 
+  R[T+1] = 0
+  profits[T] = 0
+  
+  
+  for(i in (T):1){
+    p[i] = p[i+1]/(delta+1)
+    q[i] = (a-p[i])/b
+    R[i] = R[i+1]+q[i]
+    profits[i] = (p[i]-c)*q[i]
+  }
+
+    profits = profits*(1/(1+delta))^t
+  
+return(data.frame(p, q, R, profits))
+}
+
+```
+
+**Case 1: Marginal Cost of Extraction, Same Initial Reserves**
+```{r}
+
+value1 = 36
+out_1b1<- case1_func(value1)
+#print(out_1b1$R[1])
+
+npv_c1 <- sum(out_1b1$profits)
+  
+out_1b1 <- round(out_1b1,2)
+out_1b1$p <- paste("$",out_1b1$p)
+out_1b1$profits <- paste("$",out_1b1$profits)
+
+out_1b1$Time <- seq(0,value1)
+
+```
+
+
+The final year should be `r value1` and the following are the values for pt, qt, Rt and Pit:
+
+```{r}
+kable(out_1b1, col.names = c("Price", "Quantity", "Reserves", "Profits", "Time"), align="c")
+```
+
+
+**Case 2: No Marginal Cost of Extraction, More Initial Reserves**
+```{r}
+
+value2 = 41
+out_1b2<- exhaust_fun(value2)
+#print(out_1b2$R[1])
+
+npv_c2 <- sum(out_1b2$profits)
+
+out_1b2 <- round(out_1b2,2)
+out_1b2$p <- paste("$",out_1b2$p)
+out_1b2$profits <- paste("$",out_1b2$profits)
+
+out_1b2$Time <- seq(0,value2)
+
+```
+
+
+The final year should be `r value2` and the following are the values for pt, qt, Rt and Pit:
+
+```{r}
+kable(out_1b2, col.names = c("Price", "Quantity", "Reserves", "Profits", "Time"), align="c")
+```
+
+
+
+
+**Case 3: No Marginal Cost of Extraction, Less Steep Demand Curve**
+
+```{r}
+case3_fun <- function(T, a=40, b=0.75194, delta=0.05){
+  t=seq(0,T)
+  p <- vector(mode="numeric", length=(T+1))
+  q <- vector(mode="numeric", length=(T+1))
+  R <- vector(mode="numeric", length=(T+1))
+  profits <- vector(mode="numeric", length=(T+1))
+  
+  p[T+1] = a 
+  R[T+1] = 0
+  profits[T] = 0
+  
+  
+  for(i in (T):1){
+    p[i] = p[i+1]/(delta+1)
+    q[i] = (a-p[i])/b
+    R[i] = R[i+1]+q[i]
+    profits[i] = p[i]*q[i]
+  }
+
+    profits = profits*(1/(1+delta))^t
+  
+return(data.frame(p, q, R, profits))
+}
+```
+
+```{r}
+value3 = 30
+out_1b3<- case3_fun(value3)
+#print(out_1b3$R[1])
+
+npv_c3 <- sum(out_1b3$profits)
+
+out_1b3 <- round(out_1b3,2)
+out_1b3$p <- paste("$",out_1b3$p)
+out_1b3$profits <- paste("$",out_1b3$profits)
+
+out_1b3$Time <- seq(0,value3)
+
+```
+
+
+The final year should be `r value3` and the following are the values for pt, qt, Rt and Pit:
+
+```{r}
+kable(out_1b3, col.names = c("Price", "Quantity", "Reserves", "Profits", "Time"), align="c")
+```
+
+
+### C.
+
+
+What is the final year $T$ for the three cases? Explain why they are different from part A.
+
+<span style="color: blue;">**Solution**</span>
+
+
+<span style="color: blue;">
+
+</span>
+
+```{r}
+case = c(1, 2, 3)
+fyear = c(value1, value2, value3)
+
+partC <- data.frame(case, fyear)
+kable(partC, col.names = c("Case", "Final Year"), align="c")
+```
+
+In Case 1, if you drew the Hotelling model 4 quadrants, it would look the exact same as in 1A. Benefits are not modeled in the Hotelling model so changing costs only affects the net benefits and has no affect on quantity, price, or time.
+
+In Case 2, the Hotelling model would look different. The initial reserves have increased but there is no change in demand, which must remain constant (QII looks the same as it does in 1A). As a result, time must increase to account for the higher value for initial reserves (time moves farther away from the origin between QIII/QIV). Time in case 2 > Time in 1A to allow for extraction of all reserves, keeping demand constant
+
+In Case 3, the Hotelling model would also look different. Now, we have changed the elasticity of demand. This pushes QT (quantity extracted in time T) farther left on the x axis in QIII. However, reserves stay constant, so time must decrease here to have the same area under the curve in QIII as we do in part 1A. Time in case 3 < time in 1A to extract the same reserves. 
+
+
+### D. 
+
+Compare the path of prices in the three cases to that in part A. Explain the differences.
+
+<span style="color: blue;">**Solution**</span>
+
+<span style="color: blue;">
+
+</span>
+
+
+In case 1, the path of the prices is the same. As previously mentioned, the quadrants of the Hotelling model look the same as in part A. Price always increases at the rate of interest, so if the time doesn't change (which it doesn't -- see part C), initial price will be the same as well, because it has the same amount of time to reach a value of a from an initial price. p0 case 1 = p0 1A
+
+In case 2,  it takes longer to get to a value of a = 40. This is because time has increased to account for more initial reserves with the same demand curve. If T increases, then p has longer to get to a value of a = 40, as it will always increase at the rate of interest. If price is increasing due to the same formula with the same endpoint, but there are more iterations, it must start at a smaller initial value, and p0 case 2 < p0 part 1A.
+
+In case 3, time has decreased to reflect the change in demand with the same total amount of initial reserves. Price, as always, increases at the rate of interest, but it has less time to get to P=a=$40 in this case, so it must start at a higher value because it has fewer iteration. 
+
+In all cases, the final price is $40 because that is the choke price given by the same inverse demand curve in each case. 
+
+
+
+### E.
+
+What happens to the present discounted value of profits (in other words, the value of the reserves $R_0$) in the three cases compared to part A? Explain the differences.
+
+<span style="color: blue;">**Solution**</span>
+
+<span style="color: blue;">
+
+</span>
+
+```{r}
+
+scenario <- c("Part A", "Case 1", "case 2", "Case 3")
+
+npvs <- paste("$", round(c(npv_a, npv_c1, npv_c2, npv_c3), 2))
+
+part_e <- data.frame(scenario, npvs)
+
+kable(part_e, col.names = c("Scenario", "Present Disconted Value of Profits"))
+```
+
+In case 1, the value of the profits is lower because it is the exact same scenario as part A, except there is a cost associated with each extraction, so the net benefits in each period are lower.
+
+In case 2, the NPV is slightly lower than in part A, because the starting price is lower. There are more extraction periods (41 vs 36) but the higher values come later and are more discounted, and the present discounted value of profits cannot quite reach what it is in part A.
+
+In case 3, the NPV is the highest because the intiial price is the highest. Though there are 6 periods of extraction fewer than in part A, they start at a much higher price and future highest values are not as discounted as they are in part A. 
